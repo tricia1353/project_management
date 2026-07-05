@@ -1,0 +1,62 @@
+.page { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.back { color: #2563eb; background: none; padding: 0; font-size: 14px; cursor: pointer; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; }
+.header h1 { font-size: 28px; margin-bottom: 6px; }
+.header p { color: #64748b; margin: 0; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+.badge { border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 600; }
+.badgeActive     { background: #dcfce7; color: #166534; }
+.badgeStalled    { background: #fef3c7; color: #92400e; }
+.badgeNeedsReview { background: #fee2e2; color: #991b1b; }
+.badgeCompleted  { background: #f1f5f9; color: #475569; }
+.healthReason { font-size: 13px; color: #64748b; }
+
+.section { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(15,23,42,0.06); }
+.section h2 { font-size: 18px; margin-bottom: 14px; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid > div { display: flex; flex-direction: column; gap: 2px; }
+.grid strong { color: #64748b; font-size: 12px; }
+.grid span { color: #1e293b; word-break: break-all; }
+
+/* 状态按钮 */
+.statusBtn { border-radius: 6px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.statusBtnBacklog   { background: #fee2e2; color: #b91c1c; }
+.statusBtnInProgress { background: #dbeafe; color: #1d4ed8; }
+
+/* 时间线 */
+.timeline { display: flex; flex-direction: column; gap: 10px; }
+.timelineItem { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+.timelineIcon { font-size: 18px; flex-shrink: 0; }
+.timelineContent { flex: 1; }
+.timelineBody { color: #1e293b; font-size: 14px; margin-bottom: 3px; }
+.timelineTime { color: #94a3b8; font-size: 12px; }
+
+/* 文件列表 */
+.assignmentList { display: flex; flex-direction: column; gap: 8px; }
+.assignmentItem {
+  display: grid; grid-template-columns: 1fr auto; gap: 4px 16px;
+  padding: 10px 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;
+  transition: background 0.1s;
+}
+.assignmentItem:hover { background: #eff6ff; border-color: #93c5fd; }
+.assignmentName { font-weight: 600; font-size: 13px; color: #1e293b; }
+.assignmentSrc  { font-size: 12px; color: #64748b; grid-column: 1; }
+.assignmentTime { font-size: 12px; color: #94a3b8; grid-column: 2; grid-row: 1; white-space: nowrap; align-self: start; }
+
+.empty { color: #94a3b8; text-align: center; padding: 28px; background: #f8fafc; border-radius: 8px; }
+
+/* 公开分享 */
+.shareToggle { display: flex; align-items: center; gap: 8px; }
+.shareLabel { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; font-weight: 500; color: #1e293b; }
+.shareLabel input[type="checkbox"] { width: 16px; height: 16px; accent-color: #2563eb; cursor: pointer; }
+.shareSectionTitle { font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px; }
+.shareFileList { display: flex; flex-direction: column; gap: 6px; }
+.shareFileItem { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #1e293b; cursor: pointer; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; background: #f8fafc; }
+.shareFileItem:hover { background: #eff6ff; border-color: #93c5fd; }
+.shareFileItem input[type="checkbox"] { width: 14px; height: 14px; accent-color: #2563eb; cursor: pointer; flex-shrink: 0; }
+.shareLink { margin-top: 12px; display: flex; align-items: center; gap: 8px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 10px 14px; }
+.shareLinkUrl { flex: 1; font-size: 13px; color: #166534; word-break: break-all; font-family: monospace; }
+.shareCopyBtn { flex-shrink: 0; background: #166534; color: white; border-radius: 6px; padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.shareNotice { margin-top: 12px; font-size: 12px; color: #64748b; background: #fefce8; border: 1px solid #fde047; border-radius: 6px; padding: 8px 12px; line-height: 1.6; }
+

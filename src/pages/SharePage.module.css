@@ -1,0 +1,271 @@
+.shell {
+  min-height: 100vh;
+  background: #f1f5f9;
+  padding: 32px 16px;
+}
+
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.loading {
+  text-align: center;
+  color: #64748b;
+  padding: 80px 0;
+  font-size: 15px;
+}
+
+.notFound {
+  text-align: center;
+  padding: 80px 24px;
+  color: #475569;
+}
+
+.notFoundIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.notFound h2 {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: #1e293b;
+}
+
+.notFound p {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.breadcrumb {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.health_active { background: #dcfce7; color: #166534; }
+.health_stalled { background: #fef3c7; color: #92400e; }
+.health_needs_review { background: #fee2e2; color: #991b1b; }
+.health_completed { background: #f1f5f9; color: #475569; }
+.badgeKanban { background: #e0f2fe; color: #0369a1; }
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.statsRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.statCard {
+  flex: 1;
+  min-width: 100px;
+  background: white;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+}
+
+.sectionTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 14px;
+}
+
+.empty {
+  color: #94a3b8;
+  text-align: center;
+  padding: 24px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timelineItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.timelineIcon { font-size: 17px; flex-shrink: 0; }
+.timelineContent { flex: 1; }
+.timelineBody { color: #1e293b; font-size: 14px; margin-bottom: 3px; }
+.timelineTime { color: #94a3b8; font-size: 12px; }
+
+.fileList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fileCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.fileHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.extBadge {
+  display: inline-block;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-top: 1px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.fileTitleBlock {
+  flex: 1;
+  min-width: 0;
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  word-break: break-all;
+  margin-bottom: 4px;
+}
+
+.fileSrc {
+  font-size: 11px;
+  color: #94a3b8;
+  word-break: break-all;
+}
+
+.fileTime {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.fileSummary {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid #e2e8f0;
+}
+
+.fileSummary strong {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 5px;
+}
+
+.fileSummary p {
+  margin: 0;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.fileExtraSummary {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fileExtraSummary p {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.fileExtraSummary span {
+  font-weight: 600;
+  color: #475569;
+}
+
+.footer {
+  text-align: center;
+  font-size: 12px;
+  color: #cbd5e1;
+  padding: 8px 0 4px;
+}

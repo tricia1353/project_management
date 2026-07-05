@@ -1,0 +1,30 @@
+.page { max-width: 980px; margin: 0 auto; }
+.pageTitle { font-size: 28px; margin-bottom: 20px; }
+.section { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06); }
+.sectionHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.section h2 { font-size: 18px; margin: 0 0 14px; }
+.addFolderForm { display: flex; gap: 8px; padding: 12px; background: #f6f8fc; border-radius: 8px; margin-bottom: 12px; }
+.folderCard { border: 1px solid #e3e7ef; border-radius: 10px; padding: 14px; margin-top: 10px; }
+.folderPath { font-weight: 600; margin-bottom: 10px; word-break: break-all; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.folderTypeBadge { background: #e0e7ff; color: #3730a3; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
+.btnScan:disabled { opacity: 0.45; cursor: default; }
+.folderMeta { display: flex; align-items: center; gap: 6px; color: #555b6e; margin-bottom: 10px; }
+.folderActions { display: flex; gap: 8px; }
+.input, .select { border: 1px solid #d7dce7; border-radius: 8px; padding: 8px 10px; background: white; }
+.input:focus, .select:focus { outline: 2px solid #dbeafe; border-color: #3b82f6; }
+.inputSmall { width: 130px; border: 1px solid #d7dce7; border-radius: 8px; padding: 8px 10px; }
+.btnPrimary, .btnSecondary, .btnScan, .btnDanger, .btnGhost { border-radius: 8px; padding: 8px 12px; font-weight: 600; }
+.btnPrimary { background: #2563eb; color: white; }
+.btnSecondary { background: #eef2ff; color: #3730a3; }
+.btnScan { background: #ecfdf5; color: #047857; }
+.btnDanger { background: #fef2f2; color: #b91c1c; }
+.btnGhost { color: #4b5563; background: #f3f4f6; }
+.btnPrimary:disabled, .btnSecondary:disabled, .btnScan:disabled { opacity: 0.6; cursor: not-allowed; }
+.empty { color: #777; padding: 20px; text-align: center; background: #f8fafc; border-radius: 8px; }
+.aiForm { display: grid; gap: 12px; }
+.formRow { display: grid; grid-template-columns: 140px 1fr; align-items: center; gap: 12px; }
+.formActions { display: flex; gap: 8px; margin-top: 8px; }
+.testOk, .testFail { padding: 10px 12px; border-radius: 8px; margin-top: 8px; }
+.testOk { background: #ecfdf5; color: #047857; }
+.testFail { background: #fef2f2; color: #b91c1c; }
+.hint { color: #6b7280; margin: 6px 0 0; font-size: 13px; }

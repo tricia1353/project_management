@@ -1,0 +1,70 @@
+.page { height: 100%; display: flex; flex-direction: column; gap: 16px; overflow: auto; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.header h1 { font-size: 28px; }
+.header p { color: #6b7280; margin: 4px 0 0; }
+.actions { display: flex; gap: 8px; align-items: center; }
+.actions select { border: 1px solid #d7dce7; border-radius: 8px; padding: 8px 10px; background: white; max-width: 360px; }
+
+.toolbar { display: flex; gap: 8px; align-items: center; }
+.toolbar input { min-width: 260px; border: 1px solid #d7dce7; border-radius: 8px; padding: 8px 10px; }
+.toolbar select { border: 1px solid #d7dce7; border-radius: 8px; padding: 8px 10px; background: white; }
+.projectCount { font-size: 13px; color: #64748b; margin-left: 4px; }
+
+/* 项目树 */
+.tree { display: flex; flex-direction: column; gap: 10px; }
+.treeNode { display: flex; flex-direction: column; }
+.children {
+  margin-left: 24px;
+  padding-left: 12px;
+  border-left: 2px solid #e2e8f0;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 项目卡片 */
+.projectCard {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.05);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.projectCard:hover { border-color: #93c5fd; box-shadow: 0 2px 8px rgba(15,23,42,0.08); }
+
+.projectMain { cursor: pointer; display: flex; flex-direction: column; gap: 5px; }
+
+.projectTitleRow { display: flex; align-items: center; gap: 8px; }
+.expandBtn { background: none; color: #64748b; font-size: 14px; padding: 0 4px; line-height: 1; cursor: pointer; }
+.expandSpacer { display: inline-block; width: 22px; }
+.projectTitleRow strong { font-size: 15px; font-weight: 700; }
+
+/* 健康状态 badge */
+.healthBadge { border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.health_active     { background: #dcfce7; color: #166534; }
+.health_stalled    { background: #fef3c7; color: #92400e; }
+.health_needs_review { background: #fee2e2; color: #991b1b; }
+.health_completed  { background: #f1f5f9; color: #475569; }
+
+.projectPath { font-size: 12px; color: #94a3b8; }
+.projectMeta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: #64748b; }
+.latestUpdate { font-size: 13px; color: #1e293b; background: #f8fafc; border-radius: 6px; padding: 5px 8px; margin-top: 2px; border-left: 3px solid #93c5fd; }
+
+/* 操作按钮区 */
+.projectActions { display: flex; gap: 6px; margin-top: 10px; }
+.projectActions button { font-size: 12px; padding: 5px 10px; background: #f1f5f9; color: #475569; border-radius: 6px; cursor: pointer; }
+.projectActions button:hover { background: #e2e8f0; }
+.dangerBtn { background: #fee2e2 !important; color: #b91c1c !important; }
+.dangerBtn:hover { background: #fecaca !important; }
+
+/* 动态输入 */
+.updateForm { display: flex; gap: 6px; margin-top: 8px; }
+.updateForm input { flex: 1; border: 1px solid #d7dce7; border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+.updateForm button { padding: 6px 12px; background: #2563eb; color: white; border-radius: 6px; font-size: 13px; font-weight: 600; }
+
+/* 预览拖拽用 */
+.dragPreview { width: 260px; box-shadow: 0 12px 28px rgba(15,23,42,0.18); }
+
+.empty { background: white; border-radius: 12px; padding: 40px; text-align: center; color: #64748b; }
