@@ -1,6 +1,11 @@
 // 应用配置常量
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
 export const SERVER_PORT = 3001
-export const DB_PATH = new URL('../data/kanban.db', import.meta.url).pathname
+export const DB_PATH = join(__dirname, '..', 'data', 'kanban.db')
 
 // 文件扫描排除列表
 export const EXCLUDED_DIRS = new Set([

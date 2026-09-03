@@ -1,0 +1,85 @@
+.cosmic {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* 极光柔光晕（呼吸） */
+.aurora {
+  position: absolute;
+  inset: 0;
+  filter: blur(60px);
+  opacity: 0.5;
+  background:
+    radial-gradient(520px 520px at 12% 16%, rgba(124, 140, 255, 0.45), transparent 60%),
+    radial-gradient(540px 540px at 88% 20%, rgba(43, 182, 214, 0.38), transparent 60%),
+    radial-gradient(620px 620px at 60% 96%, rgba(178, 124, 255, 0.34), transparent 60%);
+  animation: breathe 10s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { opacity: 0.42; transform: scale(1); }
+  50% { opacity: 0.62; transform: scale(1.04); }
+}
+
+/* 顶部流动极光丝带 */
+.ribbon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 42vh;
+  filter: blur(42px);
+  opacity: 0.42;
+}
+.ribbon svg { width: 100%; height: 100%; display: block; }
+.ribbon path { transform-origin: center; }
+.r1 { animation: sway 16s ease-in-out infinite; }
+.r2 { animation: sway 21s ease-in-out infinite reverse; }
+@keyframes sway {
+  0%, 100% { transform: translateX(-2%) translateY(0); }
+  50% { transform: translateX(2%) translateY(-10px); }
+}
+
+/* 星空 */
+.stars { position: absolute; inset: 0; }
+.dot {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(120, 120, 200, 0.5);
+  box-shadow: 0 0 6px rgba(140, 140, 220, 0.5);
+  animation-name: twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+@keyframes twinkle {
+  from { opacity: 0.15; transform: scale(0.7); }
+  to { opacity: 0.85; transform: scale(1); }
+}
+.spark {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background:
+    linear-gradient(90deg, transparent 46%, rgba(109, 94, 252, 0.7) 50%, transparent 54%),
+    linear-gradient(0deg, transparent 46%, rgba(109, 94, 252, 0.7) 50%, transparent 54%);
+  filter: drop-shadow(0 0 4px rgba(178, 124, 255, 0.6));
+  animation-name: sparkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+.spark::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: rgba(109, 94, 252, 0.55);
+}
+@keyframes sparkle {
+  0% { opacity: 0; transform: scale(0.6) rotate(0deg); }
+  50% { opacity: 0.9; transform: scale(1) rotate(45deg); }
+  100% { opacity: 0; transform: scale(0.6) rotate(90deg); }
+}

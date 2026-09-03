@@ -149,8 +149,28 @@
   flex: 1;
   min-height: 0;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   overflow: auto;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionHeader {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.fileInfo,
+.projectInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .card {

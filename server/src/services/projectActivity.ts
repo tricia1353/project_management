@@ -11,6 +11,16 @@ interface ActivityRow {
   at: string
 }
 
+function parseCollaborators(json: string | null | undefined): string[] {
+  if (!json) return []
+  try {
+    const parsed = JSON.parse(json)
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
+  } catch {
+    return []
+  }
+}
+
 function daysSince(dateText: string | null): number | null {
   if (!dateText) return null
   const time = new Date(dateText.replace(' ', 'T')).getTime()
@@ -139,6 +149,7 @@ export function enrichProjectsWithActivity(projects: Project[], settings = getPr
 
     const enriched: Project = {
       ...project,
+      collaborators: parseCollaborators(project.collaborators_json),
       direct_latest_activity_at: directLatest,
       latest_activity_at: latestActivity,
       latest_update: latestUpdates.get(project.id) ?? null,

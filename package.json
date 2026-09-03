@@ -2,7 +2,7 @@
   "name": "project-folder-kanban",
   "version": "1.0.0",
   "private": true,
-  "description": "本地文件夹项目看板 Demo",
+  "description": "本地项目记忆体：把本地文件夹自动沉淀为带 AI 记忆的项目库（纯本地、可分享、可导出）",
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"npm run dev --prefix server\" \"vite\"",
     "dev:server": "npm run dev --prefix server",

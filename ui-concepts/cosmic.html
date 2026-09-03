@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>概念 A · 深空星图</title>
+<style>
+  :root{
+    --bg:#05060f; --panel:rgba(255,255,255,.04); --line:rgba(255,255,255,.08);
+    --text:#e8ecf8; --muted:#8b93b0; --accent:#7c8cff; --accent2:#5ad1e6;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--text); background:var(--bg);
+    background-image:
+      radial-gradient(1200px 800px at 15% -10%, rgba(124,140,255,.18), transparent 60%),
+      radial-gradient(1000px 700px at 110% 10%, rgba(90,209,230,.14), transparent 55%),
+      radial-gradient(900px 900px at 50% 120%, rgba(180,120,255,.12), transparent 60%);
+    min-height:100vh; overflow-x:hidden;
+  }
+  .stars{position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 70% 20%, #fff, transparent),
+      radial-gradient(1px 1px at 40% 70%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 85% 60%, #cfe, transparent),
+      radial-gradient(1px 1px at 60% 85%, #fff, transparent),
+      radial-gradient(1px 1px at 10% 80%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 90% 35%, #fff, transparent),
+      radial-gradient(1px 1px at 33% 50%, #fff, transparent);
+    opacity:.5;
+  }
+  .wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:64px 32px 80px;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:56px;}
+  .brand{font-size:20px;letter-spacing:.22em;font-weight:600;}
+  .brand small{display:block;letter-spacing:.32em;font-size:11px;color:var(--muted);margin-top:6px;font-weight:400;}
+  .cta{font-size:13px;color:#cfd6ff;padding:10px 18px;border:1px solid rgba(124,140,255,.4);border-radius:999px;background:rgba(124,140,255,.08);box-shadow:0 0 24px rgba(124,140,255,.25);}
+  .hero{margin-bottom:48px;}
+  .hero h1{font-size:34px;font-weight:600;margin:0 0 12px;letter-spacing:.02em;}
+  .hero p{color:var(--muted);margin:0;font-size:14px;line-height:1.8;max-width:560px;}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:28px;align-items:start;}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px;backdrop-filter:blur(8px);}
+  .panel h3{margin:0 0 16px;font-size:13px;letter-spacing:.18em;color:var(--muted);font-weight:600;text-transform:uppercase;}
+  .file{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.03);margin-bottom:10px;border:1px solid transparent;transition:.2s;}
+  .file:hover{border-color:rgba(124,140,255,.3);background:rgba(124,140,255,.06);}
+  .file .n{font-size:13px;}
+  .file .t{font-size:11px;color:var(--muted);}
+  .constellation{position:relative;min-height:420px;}
+  .node{position:absolute;padding:14px 18px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(6px);font-size:13px;box-shadow:0 0 30px rgba(124,140,255,.12);}
+  .node b{display:block;font-weight:600;margin-bottom:2px;}
+  .node span{font-size:11px;color:var(--muted);}
+  .node.a{top:10%;left:6%;}
+  .node.b{top:8%;right:8%;}
+  .node.c{top:46%;left:34%;box-shadow:0 0 40px rgba(90,209,230,.25);}
+  .node.d{top:74%;left:10%;}
+  .node.e{top:70%;right:12%;}
+  svg.links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.5;}
+  .float{animation:fl 6s ease-in-out infinite;}
+  @keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .foot{margin-top:40px;color:var(--muted);font-size:12px;letter-spacing:.04em;}
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<div class="wrap">
+  <header>
+    <div class="brand">KANBAN<small>COSMIC WORKSPACE</small></div>
+    <div class="cta">✦ 智能分类</div>
+  </header>
+  <div class="hero">
+    <h1>让每一个文件，落在它的星轨上</h1>
+    <p>左侧是散落的灵感扫描池，右侧是正在成形的项目星系。拖拽，即点亮一条连接。</p>
+  </div>
+  <div class="grid">
+    <div class="panel">
+      <h3>扫描池</h3>
+      <div class="file"><div><div class="n">用户访谈纪要.docx</div><div class="t">2026-07-12 · 研究</div></div></div>
+      <div class="file"><div><div class="n">竞品分析.pdf</div><div class="t">2026-07-10 · 研究</div></div></div>
+      <div class="file"><div><div class="n">需求草稿.md</div><div class="t">2026-07-14 · 产品</div></div></div>
+      <div class="file"><div><div class="n">视觉规范.png</div><div class="t">2026-07-09 · 设计</div></div></div>
+    </div>
+    <div class="constellation">
+      <svg class="links" viewBox="0 0 700 440" preserveAspectRatio="none">
+        <line x1="80" y1="60" x2="360" y2="210" stroke="#7c8cff" stroke-width="1"/>
+        <line x1="620" y1="50" x2="360" y2="210" stroke="#7c8cff" stroke-width="1"/>
+        <line x1="120" y1="320" x2="360" y2="210" stroke="#5ad1e6" stroke-width="1"/>
+        <line x1="600" y1="320" x2="360" y2="210" stroke="#5ad1e6" stroke-width="1"/>
+      </svg>
+      <div class="node a float"><b>用户研究</b><span>12 个文件</span></div>
+      <div class="node b float"><b>品牌升级</b><span>8 个文件</span></div>
+      <div class="node c float"><b>核心产品</b><span>23 个文件</span></div>
+      <div class="node d float"><b>增长实验</b><span>5 个文件</span></div>
+      <div class="node e float"><b>视觉系统</b><span>9 个文件</span></div>
+    </div>
+  </div>
+  <div class="foot">概念 A · 深空星图 — 暗色宇宙 · 星座连线 · 强呼吸感</div>
+</div>
+</body>
+</html>

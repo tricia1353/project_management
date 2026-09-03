@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>概念 C · 星海极光 AURORA COSMOS（浅色）</title>
+<style>
+  :root{
+    --bg:#f5f6ff;
+    --bg2:#eef0fb;
+    --panel:rgba(255,255,255,.62);
+    --panel-strong:rgba(255,255,255,.78);
+    --line:rgba(60,70,140,.10);
+    --text:#222844;
+    --muted:#7c84a3;
+    --accent:#6d5efc;     /* 极光紫 */
+    --aurora:#3fbf8f;     /* 极光绿 */
+    --aurora2:#2bb6d6;    /* 极光青 */
+    --aurora3:#b27cff;    /* 极光粉紫 */
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--text);background:linear-gradient(180deg,var(--bg),var(--bg2));
+    min-height:100vh;overflow-x:hidden;position:relative;
+  }
+
+  /* ---------- 极光柔光晕（呼吸） ---------- */
+  .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;filter:blur(60px);opacity:.6;
+    background:
+      radial-gradient(520px 520px at 12% 16%, rgba(124,140,255,.45), transparent 60%),
+      radial-gradient(540px 540px at 88% 20%, rgba(43,182,214,.38), transparent 60%),
+      radial-gradient(620px 620px at 60% 96%, rgba(178,124,255,.34), transparent 60%);
+    animation:breathe 9s ease-in-out infinite;}
+  @keyframes breathe{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:.72;transform:scale(1.04)}}
+
+  /* ---------- 极光丝带（顶部流动光带） ---------- */
+  .ribbon-band{position:fixed;top:0;left:0;width:100%;height:46vh;z-index:0;pointer-events:none;
+    filter:blur(40px);opacity:.5;}
+  .ribbon-band svg{width:100%;height:100%;}
+  .ribbon{transform-origin:center;animation:sway 16s ease-in-out infinite;}
+  .ribbon.r2{animation-duration:21s;animation-direction:reverse;}
+  @keyframes sway{
+    0%,100%{transform:translateX(-2%) translateY(0)}
+    50%{transform:translateX(2%) translateY(-10px)}
+  }
+
+  /* ---------- 星空（浅色友好：柔紫星点 + 闪光十字） ---------- */
+  .stars{position:fixed;inset:0;z-index:0;pointer-events:none;}
+  .dot{position:absolute;border-radius:50%;background:rgba(120,120,200,.55);
+    box-shadow:0 0 6px rgba(140,140,220,.5);animation:tw var(--d,4s) ease-in-out infinite alternate;}
+  .spark{position:absolute;width:14px;height:14px;opacity:.0;
+    background:
+      linear-gradient(90deg,transparent 46%,rgba(109,94,252,.7) 50%,transparent 54%),
+      linear-gradient(0deg,transparent 46%,rgba(109,94,252,.7) 50%,transparent 54%);
+    filter:drop-shadow(0 0 4px rgba(178,124,255,.6));
+    animation:sp var(--d,5s) ease-in-out infinite alternate;}
+  .spark::after{content:"";position:absolute;inset:5px;border-radius:50%;background:rgba(109,94,252,.55);}
+  @keyframes tw{from{opacity:.15;transform:scale(.7)}to{opacity:.85;transform:scale(1)}}
+  @keyframes sp{0%{opacity:0;transform:scale(.6) rotate(0)}50%{opacity:.9;transform:scale(1) rotate(45deg)}100%{opacity:0;transform:scale(.6) rotate(90deg)}}
+
+  /* ---------- 内容层 ---------- */
+  .wrap{position:relative;z-index:2;max-width:1140px;margin:0 auto;padding:60px 32px 80px;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:54px;}
+  .brand{font-size:20px;letter-spacing:.22em;font-weight:700;color:var(--text);}
+  .brand small{display:block;letter-spacing:.34em;font-size:11px;color:var(--muted);margin-top:6px;font-weight:500;}
+  .cta{font-size:13px;color:#4b3fd6;padding:11px 20px;border:1px solid rgba(109,94,252,.30);
+    border-radius:999px;background:rgba(109,94,252,.08);backdrop-filter:blur(8px);cursor:pointer;transition:.25s;}
+  .cta:hover{background:rgba(109,94,252,.16);box-shadow:0 0 22px rgba(109,94,252,.25);}
+
+  .hero{margin-bottom:46px;}
+  .hero h1{font-size:36px;font-weight:800;margin:0 0 14px;letter-spacing:.01em;
+    background:linear-gradient(100deg,#222844 18%,#2bb6d6 52%,#7c5efc 92%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .hero p{color:var(--muted);margin:0;font-size:14px;line-height:1.9;max-width:580px;}
+
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:28px;align-items:start;}
+
+  /* 玻璃面板 */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:22px;
+    backdrop-filter:blur(14px);box-shadow:0 20px 50px rgba(60,70,140,.10),inset 0 1px 0 rgba(255,255,255,.7);}
+  .panel h3{margin:0 0 16px;font-size:12px;letter-spacing:.18em;color:var(--muted);font-weight:700;}
+  .file{display:flex;justify-content:space-between;align-items:center;padding:13px 15px;border-radius:14px;
+    background:rgba(255,255,255,.55);margin-bottom:10px;border:1px solid transparent;transition:.2s;}
+  .file:hover{border-color:rgba(63,191,143,.4);background:rgba(63,191,143,.08);transform:translateX(3px);}
+  .file .n{font-size:13px;display:flex;align-items:center;gap:9px;font-weight:500;}
+  .file .n i{width:7px;height:7px;border-radius:50%;background:var(--aurora);box-shadow:0 0 8px rgba(63,191,143,.6);}
+  .file .t{font-size:11px;color:var(--muted);}
+
+  /* 项目星系 */
+  .galaxy{position:relative;min-height:440px;border-radius:22px;overflow:hidden;
+    background:radial-gradient(120% 120% at 50% 0%,rgba(124,140,255,.10),transparent 60%);
+    border:1px solid var(--line);backdrop-filter:blur(10px);
+    box-shadow:0 20px 50px rgba(60,70,140,.10),inset 0 1px 0 rgba(255,255,255,.6);}
+  .galaxy .orb{position:absolute;top:50%;left:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#c9d2ff 45%,#7c8cff 80%);
+    box-shadow:0 0 40px rgba(124,140,255,.45),inset -6px -6px 14px rgba(80,80,160,.35);}
+  .galaxy .ring{position:absolute;top:50%;left:50%;width:240px;height:240px;margin:-120px 0 0 -120px;border-radius:50%;
+    border:1px solid rgba(124,140,255,.30);transform:rotateX(72deg);}
+  svg.links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.5;}
+  .node{position:absolute;padding:15px 19px;border-radius:16px;background:var(--panel-strong);
+    border:1px solid rgba(60,70,140,.12);backdrop-filter:blur(8px);font-size:13px;
+    box-shadow:0 12px 34px rgba(60,70,140,.12);}
+  .node b{display:block;font-weight:700;margin-bottom:3px;color:var(--text);}
+  .node span{font-size:11px;color:var(--muted);}
+  .node.c{box-shadow:0 0 34px rgba(43,182,214,.35);border-color:rgba(43,182,214,.4);}
+  .node.a{top:9%;left:5%;}
+  .node.b{top:7%;right:7%;}
+  .node.c{top:44%;left:33%;}
+  .node.d{top:73%;left:9%;}
+  .node.e{top:70%;right:11%;}
+  .float{animation:fl 6s ease-in-out infinite;}
+  .float.d2{animation-delay:1.2s}.float.d3{animation-delay:2.4s}.float.d4{animation-delay:3.1s}.float.d5{animation-delay:4s}
+  @keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+  /* 数据卡 */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:26px;}
+  .stat{padding:18px 20px;border-radius:18px;background:var(--panel);border:1px solid var(--line);
+    backdrop-filter:blur(12px);box-shadow:0 16px 40px rgba(60,70,140,.10),inset 0 1px 0 rgba(255,255,255,.7);}
+  .stat b{font-size:22px;font-weight:800;display:block;
+    background:linear-gradient(100deg,var(--aurora),var(--aurora2));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .stat span{font-size:12px;color:var(--muted);}
+
+  .foot{margin-top:42px;color:var(--muted);font-size:12px;letter-spacing:.05em;}
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+
+<!-- 极光丝带 -->
+<div class="ribbon-band">
+  <svg viewBox="0 0 1440 600" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="g1" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#3fbf8f" stop-opacity="0"/>
+        <stop offset="35%" stop-color="#3fbf8f" stop-opacity=".8"/>
+        <stop offset="70%" stop-color="#2bb6d6" stop-opacity=".7"/>
+        <stop offset="100%" stop-color="#b27cff" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="g2" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#7c8cff" stop-opacity="0"/>
+        <stop offset="50%" stop-color="#3fbf8f" stop-opacity=".6"/>
+        <stop offset="100%" stop-color="#b27cff" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path class="ribbon r1" fill="none" stroke="url(#g1)" stroke-width="60" stroke-linecap="round"
+      d="M-100 170 C 250 90, 520 250, 800 150 S 1250 210, 1540 130"/>
+    <path class="ribbon r2" fill="none" stroke="url(#g2)" stroke-width="46" stroke-linecap="round"
+      d="M-100 250 C 300 170, 600 330, 900 230 S 1300 290, 1540 210"/>
+  </svg>
+</div>
+
+<div class="stars" id="stars"></div>
+
+<div class="wrap">
+  <header>
+    <div class="brand">KANBAN<small>AURORA · COSMOS</small></div>
+    <div class="cta">✦ 智能分类</div>
+  </header>
+
+  <div class="hero">
+    <h1>在星海极光里，把事情理清楚</h1>
+    <p>浅色为底，极光为引。左侧散落的灵感如星尘，右侧项目星系正在成形——拖拽，即点亮一条连接。</p>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h3>扫描池 · SCAN POOL</h3>
+      <div class="file"><div class="n"><i></i>用户访谈纪要.docx</div><div class="t">2026-07-12 · 研究</div></div>
+      <div class="file"><div class="n"><i></i>竞品分析.pdf</div><div class="t">2026-07-10 · 研究</div></div>
+      <div class="file"><div class="n"><i></i>需求草稿.md</div><div class="t">2026-07-14 · 产品</div></div>
+      <div class="file"><div class="n"><i></i>视觉规范.png</div><div class="t">2026-07-09 · 设计</div></div>
+    </div>
+
+    <div class="galaxy">
+      <svg class="links" viewBox="0 0 700 440" preserveAspectRatio="none">
+        <line x1="80" y1="60" x2="360" y2="210" stroke="#7c8cff" stroke-width="1"/>
+        <line x1="620" y1="50" x2="360" y2="210" stroke="#3fbf8f" stroke-width="1"/>
+        <line x1="120" y1="320" x2="360" y2="210" stroke="#2bb6d6" stroke-width="1"/>
+        <line x1="600" y1="320" x2="360" y2="210" stroke="#b27cff" stroke-width="1"/>
+      </svg>
+      <div class="orb"></div>
+      <div class="ring"></div>
+      <div class="node a float d1"><b>用户研究</b><span>12 个文件</span></div>
+      <div class="node b float d2"><b>品牌升级</b><span>8 个文件</span></div>
+      <div class="node c float d3"><b>核心产品</b><span>23 个文件</span></div>
+      <div class="node d float d4"><b>增长实验</b><span>5 个文件</span></div>
+      <div class="node e float d5"><b>视觉系统</b><span>9 个文件</span></div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat breathe"><b>57</b><span>今日灵感星尘</span></div>
+    <div class="stat breathe"><b>5</b><span>成形中的星系</span></div>
+    <div class="stat breathe"><b>92%</b><span>自动归类准确率</span></div>
+    <div class="stat breathe"><b>∞</b><span>待连接的灵感</span></div>
+  </div>
+
+  <div class="foot">概念 C · 星海极光（浅色）—— 浅色宇宙 · 流动极光 · 星座星系 · 玻璃呼吸</div>
+</div>
+
+<script>
+  (function(){
+    const box=document.getElementById('stars');
+    const N=70, S=10; // N 圆点，S 闪光十字
+    let html='';
+    for(let i=0;i<N;i++){
+      const x=Math.random()*100, y=Math.random()*100;
+      const s=(Math.random()*1.8+0.8).toFixed(2);
+      const d=(Math.random()*3+2.5).toFixed(2)+'s';
+      const delay=(Math.random()*4).toFixed(2)+'s';
+      html+=`<span class="dot" style="left:${x}%;top:${y}%;width:${s}px;height:${s}px;--d:${d};animation-delay:${delay}"></span>`;
+    }
+    for(let i=0;i<S;i++){
+      const x=(Math.random()*92+3).toFixed(2), y=(Math.random()*88+4).toFixed(2);
+      const d=(Math.random()*3+4).toFixed(2)+'s';
+      const delay=(Math.random()*5).toFixed(2)+'s';
+      const sc=(Math.random()*0.5+0.7).toFixed(2);
+      html+=`<span class="spark" style="left:${x}%;top:${y}%;--d:${d};animation-delay:${delay};transform:scale(${sc})"></span>`;
+    }
+    box.innerHTML=html;
+  })();
+</script>
+</body>
+</html>

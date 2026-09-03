@@ -6,6 +6,7 @@ export function useVersions(fileId: number) {
     queryKey: ['versions', fileId],
     queryFn: () => versionsApi.getVersions(fileId),
     enabled: !!fileId,
+    refetchInterval: 10_000,
   })
 }
 
@@ -25,6 +26,41 @@ export function useRestoreVersion() {
       qc.invalidateQueries({ queryKey: ['files'] })
       qc.invalidateQueries({ queryKey: ['file'] })
       qc.invalidateQueries({ queryKey: ['versions'] })
+    },
+  })
+}
+
+export function useVersionGroupCandidates(fileId: number) {
+  return useQuery({
+    queryKey: ['version-group-candidates', fileId],
+    queryFn: () => versionsApi.getVersionGroupCandidates(fileId),
+    enabled: !!fileId,
+  })
+}
+
+export function useMergeVersionGroup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ fileId, targetFileId }: { fileId: number; targetFileId: number }) =>
+      versionsApi.mergeVersionGroup(fileId, targetFileId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['versions'] })
+      qc.invalidateQueries({ queryKey: ['file'] })
+      qc.invalidateQueries({ queryKey: ['files'] })
+      qc.invalidateQueries({ queryKey: ['version-group-candidates'] })
+    },
+  })
+}
+
+export function useSplitVersionGroup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (fileId: number) => versionsApi.splitVersionGroup(fileId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['versions'] })
+      qc.invalidateQueries({ queryKey: ['file'] })
+      qc.invalidateQueries({ queryKey: ['files'] })
+      qc.invalidateQueries({ queryKey: ['version-group-candidates'] })
     },
   })
 }

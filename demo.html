@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#f5f6ff"/>
+<title>项目经纬 · 在线演示（虚拟数据）</title>
+<style>
+:root{
+  --bg:#f5f6ff;--bg2:#eef0fb;--text:#222844;--muted:#7c84a3;
+  --accent:#6d5efc;--aurora:#3fbf8f;--aurora2:#2bb6d6;--aurora3:#b27cff;
+  --panel:rgba(255,255,255,.62);--panel-strong:rgba(255,255,255,.80);
+  --line:rgba(60,70,140,.10);--line-strong:rgba(60,70,140,.16);
+  --shadow:0 18px 44px rgba(60,70,140,.10);--shadow-sm:0 8px 24px rgba(60,70,140,.08);
+  --radius:14px;--radius-lg:22px;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-size:14px;line-height:1.5;color:var(--text);background:linear-gradient(180deg,var(--bg),var(--bg2));min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,'PingFang SC','Microsoft YaHei',sans-serif}
+h1,h2,h3{margin:0 0 8px}
+button{cursor:pointer;border:none;background:none;font-family:inherit;font-size:inherit;color:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit;color:var(--text);background:rgba(255,255,255,.7);border:1px solid var(--line-strong);border-radius:10px;padding:8px 11px;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(109,94,252,.15)}
+a{color:inherit;text-decoration:none}
+code,pre{font-family:'JetBrains Mono','Fira Code',Consolas,'Courier New',monospace;font-size:.87em}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:rgba(109,94,252,.28);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(109,94,252,.45)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* 极光背景 */
+.cosmic{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.aurora{position:absolute;inset:-10%;filter:blur(60px);opacity:.5;background:
+  radial-gradient(520px 520px at 12% 16%,rgba(124,140,255,.45),transparent 60%),
+  radial-gradient(540px 540px at 88% 20%,rgba(43,182,214,.38),transparent 60%),
+  radial-gradient(620px 620px at 60% 96%,rgba(178,124,255,.34),transparent 60%);
+  animation:breathe 10s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.42;transform:scale(1)}50%{opacity:.62;transform:scale(1.04)}}
+
+/* 布局 */
+.app{display:flex;height:100vh;overflow:hidden;position:relative;z-index:1}
+.sidebar{width:200px;flex-shrink:0;display:flex;flex-direction:column;background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-right:1px solid var(--line);box-shadow:var(--shadow-sm)}
+.logo{display:flex;align-items:center;gap:9px;padding:20px 18px 16px;border-bottom:1px solid var(--line)}
+.logo-text{font-size:1.1rem;font-weight:700;letter-spacing:.02em;background:linear-gradient(100deg,var(--accent),var(--aurora2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.nav-list{list-style:none;padding:10px 0;margin:0;flex:1}
+.nav-link{display:flex;align-items:center;gap:11px;padding:10px 16px;color:var(--muted);border-radius:10px;margin:2px 8px;font-size:.9rem;transition:background .2s,color .2s,box-shadow .2s;width:calc(100% - 16px);text-align:left}
+.nav-link svg{flex-shrink:0;opacity:.85}
+.nav-link:hover{background:rgba(109,94,252,.08);color:var(--text)}
+.nav-link.active{background:linear-gradient(135deg,rgba(109,94,252,.92),rgba(43,182,214,.85));color:#fff;font-weight:600;box-shadow:0 6px 18px rgba(109,94,252,.30)}
+.nav-link.active svg{opacity:1}
+.nav-label{flex:1}
+.unread-badge{background:#ef4444;color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:1px 5px;min-width:18px;text-align:center;line-height:16px;box-shadow:0 0 10px rgba(239,68,68,.5)}
+.side-footer{margin:0 12px 14px;padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.5)}
+.side-footer strong{display:block;font-size:12px;margin-bottom:5px}
+.side-footer p{margin:0;font-size:11px;color:var(--muted);line-height:1.6}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+/* 顶栏 */
+.topbar{height:56px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(255,255,255,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.crumb{font-size:13px;color:var(--muted)}
+.crumb b{color:var(--text)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.demo-pill{font-size:12px;font-weight:700;color:#515bb0;background:rgba(109,94,252,.14);border-radius:999px;padding:4px 12px}
+.btn-tour{background:linear-gradient(135deg,var(--accent),var(--aurora2));color:#fff;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(109,94,252,.28)}
+.btn-ghost-top{background:rgba(124,140,255,.10);color:#515bb0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:600}
+.btn-ghost-top:hover{background:rgba(124,140,255,.18)}
+.screen-host{flex:1;overflow:auto;padding:24px;position:relative}
+.screen{display:none}
+.screen.active{display:block}
+
+/* 通用 */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
+.page-head h1{font-size:28px;margin:0 0 4px;background:linear-gradient(100deg,var(--text),var(--accent) 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.page-head p{color:var(--muted);margin:0}
+.badge{background:rgba(109,94,252,.14);color:#515bb0;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--aurora2));color:#fff;border-radius:12px;padding:9px 16px;font-size:14px;font-weight:700;box-shadow:0 6px 18px rgba(109,94,252,.30);transition:transform .15s}
+.btn-primary:hover{transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-create{color:#fff;border-radius:10px;padding:7px 12px;font-weight:600;font-size:13px;white-space:nowrap;background:linear-gradient(135deg,var(--accent),var(--aurora2));box-shadow:0 4px 12px rgba(109,94,252,.28)}
+.btn-ghost{background:rgba(124,140,255,.10);color:#515bb0;border-radius:10px;padding:7px 10px}
+.btn-ghost:hover{background:rgba(124,140,255,.18)}
+.empty-glass{color:var(--muted);text-align:center;padding:32px;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(14px);border-radius:var(--radius-lg)}
+.highlight{outline:3px solid rgba(109,94,252,.55);outline-offset:4px;border-radius:var(--radius);animation:pulseHi 1.4s ease-in-out infinite}
+@keyframes pulseHi{0%,100%{outline-color:rgba(109,94,252,.55)}50%{outline-color:rgba(43,182,214,.55)}}
+
+/* 工作台 */
+.workspace{display:flex;gap:16px;align-items:flex-start}
+.scan-panel{width:380px;flex-shrink:0;display:flex;flex-direction:column;gap:12px;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+.organize-panel{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel-head{display:flex;align-items:center;justify-content:space-between}
+.panel-head h2{font-size:18px;margin:0}
+.panel-toolbar{display:flex;align-items:center;gap:10px}
+.toggle-label{font-size:13px;color:var(--muted);cursor:pointer}
+.filters{display:flex;gap:8px}
+.search-input{flex:1;border:1px solid var(--line-strong);border-radius:10px;padding:7px 10px;font-size:13px;background:var(--panel-strong)}
+.select-input{border:1px solid var(--line-strong);border-radius:10px;padding:7px 8px;font-size:13px;background:var(--panel-strong)}
+.view-toggle{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:3px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.55)}
+.view-tab{padding:6px 8px;border-radius:7px;font-size:13px;font-weight:600;color:var(--muted)}
+.view-tab.active{background:var(--panel-strong);color:var(--text);box-shadow:0 2px 8px rgba(15,23,42,.08)}
+.folder-group{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.45)}
+.folder-group-head{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(124,140,255,.08);font-weight:600;font-size:13px}
+.btn-scan{font-size:12px;padding:4px 10px;background:rgba(63,191,143,.16);color:#1f8f63;border-radius:8px}
+.btn-scan:hover{background:rgba(63,191,143,.26)}
+.batch-row{padding:8px;border-bottom:1px solid var(--line)}
+.batch-row .select-input{width:100%}
+.file-list{display:flex;flex-direction:column;gap:2px;padding:6px;max-height:420px;overflow-y:auto}
+.file-card{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.55);border:1px solid transparent;cursor:grab;user-select:none;transition:background .1s,border-color .1s,box-shadow .1s}
+.file-card:hover{background:rgba(124,140,255,.10);border-color:rgba(109,94,252,.4);box-shadow:0 6px 16px rgba(109,94,252,.12)}
+.file-card.dragging{opacity:.4}
+.file-name{font-weight:600;font-size:13px;word-break:break-all;margin-bottom:3px}
+.file-meta{display:flex;gap:8px;flex-wrap:wrap}
+.file-meta span{font-size:11px;color:var(--muted);background:rgba(124,140,255,.10);border-radius:4px;padding:1px 5px}
+.file-card-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
+.btn-ignore{padding:3px 8px;border-radius:7px;font-size:12px;font-weight:600;color:#8a4b18;background:rgba(245,158,11,.14)}
+.btn-ignore:hover{background:rgba(245,158,11,.24)}
+.btn-restore-file{padding:3px 8px;border-radius:7px;font-size:12px;font-weight:600;color:#2563eb;background:rgba(37,99,235,.12)}
+.empty-group{padding:12px;color:var(--muted);font-size:13px;text-align:center}
+.project-tree{display:flex;flex-direction:column;gap:6px}
+.project-children{display:flex;flex-direction:column;gap:4px;margin-top:4px;margin-left:24px;padding-left:12px;border-left:2px solid var(--line-strong)}
+.project-card{background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:2px solid transparent;border-radius:var(--radius);padding:14px;transition:border-color .15s,box-shadow .15s,transform .15s;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:8px}
+.project-card:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.project-card.drop-target{border-color:var(--accent);box-shadow:0 0 0 3px rgba(109,94,252,.25);background:rgba(124,140,255,.10)}
+.project-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.project-name{font-weight:700;font-size:15px}
+.project-path{font-size:11px;color:var(--muted);word-break:break-all;margin-top:-4px}
+.assignment-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:3px}
+.assignment-item{font-size:12px;padding:3px 8px;background:rgba(255,255,255,.5);border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.assignment-item.just-added{background:rgba(63,191,143,.18);color:#1f8f63;font-weight:600}
+.assignment-more{font-size:12px;color:var(--muted);padding:2px 8px}
+.project-actions{display:flex;gap:6px;flex-wrap:wrap}
+.project-actions button{font-size:12px;padding:5px 10px;border-radius:8px;font-weight:600}
+.btn-child{background:rgba(178,124,255,.16);color:#7a4fd0}
+.btn-child:hover{background:rgba(178,124,255,.26)}
+.btn-finalize{background:rgba(245,184,70,.18);color:#92670e}
+.btn-finalize:hover{background:rgba(245,184,70,.28)}
+.btn-archive{background:rgba(124,140,255,.10);color:#515bb0}
+.btn-archive:hover{background:rgba(124,140,255,.18)}
+.btn-delete{background:rgba(239,100,120,.14);color:#b3334a}
+.btn-delete:hover{background:rgba(239,100,120,.24)}
+.drop-hint{text-align:center;padding:8px;font-size:13px;color:var(--accent);font-weight:600;background:rgba(109,94,252,.10);border-radius:8px}
+.drag-ghost{position:fixed;z-index:200;pointer-events:none;padding:8px 10px;border-radius:10px;background:rgba(124,140,255,.12);border:1px solid rgba(109,94,252,.45);box-shadow:0 8px 24px rgba(60,70,140,.20);width:300px}
+/* 看板 */
+.kb-page{display:flex;flex-direction:column;gap:16px}
+.kb-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+.kb-head h1{font-size:28px;margin:0;background:linear-gradient(100deg,var(--text),var(--accent) 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.kb-head p{color:var(--muted);margin:4px 0 0}
+.stats-grid{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:10px}
+.stat-tile{min-height:86px;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:12px 14px;display:flex;flex-direction:column;justify-content:space-between}
+.stat-tile span{font-size:12px;color:var(--muted)}
+.stat-tile strong{font-size:28px;line-height:1}
+.stat-tile small{font-size:12px;color:var(--muted)}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toolbar input{min-width:260px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px;background:var(--panel-strong)}
+.toolbar select{border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px;background:var(--panel-strong)}
+.project-count{color:var(--muted);font-size:13px;margin-left:auto}
+.tree{display:flex;flex-direction:column;gap:10px}
+.tree-node{display:flex;flex-direction:column;gap:8px}
+.tree-children{margin-left:24px;padding-left:16px;border-left:1px dashed var(--line-strong);display:flex;flex-direction:column;gap:8px}
+.kb-card{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;transition:transform .12s,border-color .12s,box-shadow .12s}
+.kb-card:hover{transform:translateY(-1px);border-color:rgba(124,140,255,.45);box-shadow:0 10px 24px rgba(20,25,45,.08)}
+.kb-main{min-width:0;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.kb-title-row{display:flex;align-items:center;gap:8px;min-width:0}
+.kb-title-row strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.expand-btn{width:22px;height:22px;border-radius:6px;background:var(--panel-strong);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.expand-spacer{width:22px;flex-shrink:0}
+.health-badge{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.h-active{background:rgba(63,191,143,.16);color:#1f8f63}
+.h-stalled{background:rgba(245,184,70,.18);color:#92670e}
+.h-needs_review{background:rgba(239,100,120,.16);color:#a3334a}
+.h-completed{background:rgba(124,140,255,.14);color:#515bb0}
+.kb-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.people-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.person-chip{border-radius:999px;padding:2px 8px;font-size:12px;background:var(--panel-strong);border:1px solid var(--line)}
+.person-chip.empty{color:var(--muted)}
+.latest-update{font-size:13px;background:rgba(124,140,255,.08);border-radius:8px;padding:5px 8px;margin-top:2px;border-left:3px solid var(--accent)}
+.kb-actions{display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;justify-content:flex-end;max-width:280px}
+.kb-actions button{border:1px solid var(--line-strong);background:var(--panel-strong);border-radius:8px;padding:6px 10px;white-space:nowrap;font-size:13px}
+.kb-actions button:hover{border-color:rgba(124,140,255,.45)}
+.kb-actions .danger-btn{color:#a3334a;border-color:rgba(239,100,120,.35)}
+.kb-actions .follow-active{color:#92670e;border-color:rgba(245,184,70,.45);background:rgba(245,184,70,.14)}
+.summary-panel{grid-column:1/-1;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:12px}
+.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.summary-cell{border:1px solid var(--line);border-radius:8px;padding:10px;background:rgba(124,140,255,.05)}
+.summary-cell span{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}
+.summary-cell strong{display:block;font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.update-form{grid-column:1/-1;display:flex;gap:8px}
+.update-form input{flex:1;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;background:var(--panel-strong)}
+.update-form button{border:1px solid var(--line-strong);background:var(--panel-strong);border-radius:8px;padding:6px 14px;font-size:13px}
+.empty-dashed{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line-strong);border-radius:14px;background:var(--panel)}
+
+/* 白卡通用（详情 / 对话 / 消息 / 报告 / 设置） */
+.narrow{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.section{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(15,23,42,.06)}
+.section h2{font-size:18px;margin:0 0 14px}
+.section-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px}
+.section-title-row h2{margin:0}
+.section-title-row>span{color:#64748b;font-size:13px}
+.back{color:#2563eb;font-size:14px;padding:0;align-self:flex-start}
+.kicker{font-size:12px;color:#64748b;margin:0 0 4px}
+.detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.detail-head h1{font-size:28px;margin:0 0 6px;overflow-wrap:anywhere}
+.detail-head p{color:#64748b;margin:0}
+.status-pill{background:#e0e7ff;color:#3730a3;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600;white-space:nowrap}
+.info-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.info-cell{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px}
+.info-cell strong{display:block;font-size:12px;color:#64748b;margin-bottom:6px}
+.info-cell span{color:#0f172a}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-2 div{display:flex;flex-direction:column;gap:2px}
+.grid-2 strong{color:#64748b;font-size:12px}
+.grid-2 span{color:#1e293b;word-break:break-all}
+.btn-outline{border:1px solid #cbd5e1;background:#fff;color:#0f172a;border-radius:8px;padding:7px 12px;font-size:13px}
+.btn-outline:hover{background:#f8fafc}
+.hint-amber{color:#92400e;background:#fef3c7;border-radius:8px;padding:8px 12px;font-size:13px;margin:0 0 12px}
+.empty-slate{color:#94a3b8;text-align:center;padding:28px;background:#f8fafc;border-radius:8px}
+.chip{background:#f1f5f9;color:#475569;border-radius:999px;padding:3px 8px;font-size:12px;white-space:nowrap}
+.timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.version-item{border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#fff;transition:border-color .16s,box-shadow .16s}
+.version-item.hi{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.version-head{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;align-items:flex-start}
+.version-head-left{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.version-head strong{font-size:16px}
+.version-head time{color:#64748b;font-size:13px;white-space:nowrap}
+.source-tag{background:#fef3c7;color:#92400e;border-radius:999px;padding:3px 8px;font-size:12px}
+.diff-block{margin-top:10px}
+.diff-block strong,.impact strong{display:block;color:#475569;font-size:12px;margin-bottom:4px}
+.diff-block p,.impact p{color:#0f172a;margin:0;line-height:1.55;overflow-wrap:anywhere}
+.impact{margin-top:10px;background:#f8fafc;border-radius:8px;padding:10px 12px}
+.version-actions{margin-top:12px}
+/* 项目详情 */
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.badge-pill{border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600}
+.b-active{background:#dcfce7;color:#166534}
+.b-stalled{background:#fef3c7;color:#92400e}
+.b-review{background:#fee2e2;color:#991b1b}
+.b-completed{background:#f1f5f9;color:#475569}
+.health-reason{font-size:13px;color:#64748b}
+.status-btn{border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600}
+.status-btn-end{background:#fee2e2;color:#b91c1c}
+.status-btn-restore{background:#dbeafe;color:#1d4ed8}
+.tl-item{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0}
+.tl-icon{font-size:18px;flex-shrink:0}
+.tl-body{color:#1e293b;font-size:14px;margin-bottom:3px}
+.tl-time{color:#94a3b8;font-size:12px}
+.assign-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.assign-item{display:grid;grid-template-columns:1fr auto;gap:4px 16px;padding:10px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;transition:background .1s,border-color .1s}
+.assign-item:hover{background:#eff6ff;border-color:#93c5fd}
+.assign-name{font-weight:600;font-size:13px;color:#1e293b}
+.assign-time{grid-column:2;grid-row:1;font-size:12px;color:#94a3b8;white-space:nowrap;align-self:start}
+.assign-src{font-size:12px;color:#64748b}
+.share-notice{font-size:12px;color:#64748b;background:#fefce8;border:1px solid #fde047;border-radius:6px;padding:8px 12px;line-height:1.6;margin-top:12px}
+.share-label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:#1e293b}
+.share-section-title{font-size:13px;font-weight:600;color:#64748b;margin:14px 0 8px}
+.share-file-item{display:flex;align-items:center;gap:8px;font-size:13px;color:#1e293b;padding:6px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#f8fafc;margin-bottom:6px}
+.share-link{margin-top:12px;display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px}
+.share-link-url{flex:1;font-size:13px;color:#166534;word-break:break-all;font-family:monospace}
+.share-copy{background:#166534;color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600}
+
+/* 对话 */
+.chat-page{display:flex;height:100%;overflow:hidden;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(15,23,42,.06);min-height:560px}
+.chat-side{width:220px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid #e2e8f0}
+.chat-side-head{padding:14px 14px 10px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center}
+.chat-side-title{font-weight:700;font-size:14px}
+.btn-new{width:28px;height:28px;border-radius:8px;background:#2563eb;color:#fff;font-size:18px;line-height:1}
+.session-list{flex:1;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:2px}
+.session-item{border-radius:8px;padding:8px 10px;cursor:pointer}
+.session-item:hover{background:#f1f5f9}
+.session-item.active{background:#eff6ff}
+.session-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-meta{font-size:11px;color:#94a3b8;margin-top:2px}
+.chat-side-foot{padding:10px 12px;border-top:1px solid #f1f5f9}
+.btn-manage{width:100%;text-align:left;border-radius:8px;padding:8px 10px;font-size:13px;color:#475569;background:#f8fafc}
+.chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.messages{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px;background:#f8fafc}
+.bubble{max-width:80%;display:flex;flex-direction:column;gap:6px}
+.bubble.user{align-self:flex-end;align-items:flex-end}
+.bubble.assistant{align-self:flex-start;align-items:flex-start}
+.bubble-content{border-radius:12px;padding:10px 14px;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.bubble.user .bubble-content{background:#2563eb;color:#fff}
+.bubble.assistant .bubble-content{background:#fff;border:1px solid #e2e8f0;color:#1e293b}
+.typing{color:#94a3b8;letter-spacing:3px}
+.citations{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:0 2px}
+.citations-label{font-size:12px;color:#94a3b8}
+.citation-tag{background:#eff6ff;color:#1d4ed8;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:600;cursor:pointer}
+.citation-tag:hover{background:#dbeafe}
+.input-area{border-top:1px solid #e2e8f0;background:#fff;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.template-row{display:flex;gap:6px}
+.btn-template{border-radius:8px;background:#f1f5f9;color:#475569;padding:5px 10px;font-size:12px;font-weight:600}
+.btn-template:hover{background:#e2e8f0}
+.input-row{display:flex;gap:10px;align-items:flex-end}
+.input-row textarea{flex:1;border:1px solid #d1d5db;border-radius:10px;padding:10px 12px;font-size:14px;resize:none;line-height:1.5;background:#fff}
+.btn-send{height:44px;border-radius:10px;background:#2563eb;color:#fff;padding:0 18px;font-weight:700;font-size:14px}
+.btn-send:disabled{opacity:.6;cursor:not-allowed}
+
+/* 消息 */
+.msg-tabs{display:flex;align-items:center;gap:6px;border-bottom:1px solid #e2e8f0}
+.msg-tab{display:inline-flex;align-items:center;gap:6px;padding:8px 4px;margin-bottom:-1px;border-bottom:2px solid transparent;color:#64748b;font-size:14px;font-weight:600}
+.msg-tab+.msg-tab{margin-left:14px}
+.msg-tab.active{color:#2563eb;border-bottom-color:#2563eb}
+.tab-count{background:#f1f5f9;color:#475569;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:700}
+.msg-tab.active .tab-count{background:#dbeafe;color:#1d4ed8}
+.msg-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 4px rgba(15,23,42,.05)}
+.msg-card.unread{border-left:4px solid #2563eb}
+.msg-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#2563eb;flex-shrink:0}
+.type-tag{background:#eef2ff;color:#4338ca;border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700}
+.msg-title{font-weight:700;font-size:15px}
+.msg-health{border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700}
+.project-tag{font-size:12px;color:#64748b}
+.msg-body{font-size:14px;color:#374151;line-height:1.6}
+.remind-tag{font-size:12px;color:#d97706;background:#fffbeb;border-radius:6px;padding:4px 8px;align-self:flex-start}
+.msg-actions{display:flex;gap:8px;flex-wrap:wrap}
+.msg-actions button{border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600}
+.btn-done{background:#dcfce7;color:#166534}
+.btn-add-event{background:#eff6ff;color:#1d4ed8}
+.btn-remind{background:#fef9c3;color:#92400e}
+.btn-dismiss{background:#f1f5f9;color:#64748b}
+.analyze-result{display:flex;justify-content:space-between;align-items:center;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534;padding:10px 14px;font-size:13px;font-weight:600}
+.btn-analyze{background:linear-gradient(135deg,#6366f1,#2563eb);color:#fff;border-radius:10px;padding:9px 16px;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(99,102,241,.25)}
+.btn-analyze:disabled{opacity:.6;cursor:not-allowed}
+/* 报告 */
+.report-toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#64748b}
+.field input,.field select{border:1px solid #d7dce7;border-radius:8px;padding:8px 10px;font-size:13px;background:#fff;color:var(--text)}
+.report-preview{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 18px;max-height:420px;overflow:auto;white-space:pre-wrap;font-family:'JetBrains Mono','Fira Code',Consolas,monospace;font-size:12.5px;line-height:1.7;color:#0f172a}
+.report-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btn-feishu{background:#00d6b9;color:#053b34;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700}
+.push-ok{margin-top:12px;display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;font-size:13px;color:#166534}
+
+/* 设置 */
+.set-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.set-tab{border:1px solid var(--line-strong);background:var(--panel-strong);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--muted)}
+.set-tab.active{background:linear-gradient(135deg,var(--accent),var(--aurora2));color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(109,94,252,.28)}
+.folder-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px}
+.folder-path{font-family:monospace;font-size:12.5px;color:#0f172a;word-break:break-all}
+.folder-kind{font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px}
+.kind-source{background:#e0e7ff;color:#3730a3}
+.kind-target{background:#dcfce7;color:#166534}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .full{grid-column:1/-1}
+.test-ok{display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:9px 12px;font-size:13px;color:#166534;margin-top:12px}
+
+/* 分享页 */
+.share-page{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.share-hero{background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow)}
+.share-hero h1{font-size:26px;margin:0 0 6px}
+.visitor-note{font-size:12px;color:var(--muted);background:rgba(124,140,255,.08);border-radius:8px;padding:8px 12px;margin-top:14px}
+
+/* 导览条 */
+.tour-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:150;width:min(900px,calc(100vw - 40px));display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:16px;background:rgba(20,24,48,.92);backdrop-filter:blur(14px);box-shadow:0 18px 44px rgba(15,20,50,.34);color:#eef0fb}
+.tour-bar.hidden{display:none}
+.tour-step{flex-shrink:0;font-size:12px;font-weight:700;color:#a9b2e8;background:rgba(255,255,255,.10);border-radius:999px;padding:4px 10px}
+.tour-caption{flex:1;font-size:13px;line-height:1.6}
+.tour-caption b{color:#fff}
+.tour-btns{display:flex;gap:6px;flex-shrink:0}
+.tour-btns button{border-radius:9px;padding:6px 12px;font-size:12.5px;font-weight:600;background:rgba(255,255,255,.12);color:#eef0fb}
+.tour-btns button:hover{background:rgba(255,255,255,.2)}
+.tour-btns .primary{background:linear-gradient(135deg,var(--accent),var(--aurora2));color:#fff}
+.tour-close{background:transparent!important;color:#8b93c4!important;padding:6px 8px!important}
+.tour-open{position:fixed;right:20px;bottom:20px;z-index:150;border-radius:999px;padding:11px 18px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--accent),var(--aurora2));box-shadow:0 12px 30px rgba(109,94,252,.4)}
+.tour-open.hidden{display:none}
+
+/* toast */
+.toast-host{position:fixed;left:50%;transform:translateX(-50%);top:18px;z-index:300;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:#0f172a;color:#f8fafc;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:600;box-shadow:0 10px 28px rgba(15,23,42,.28);animation:toastIn .2s ease}
+@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+
+/* 弹窗 */
+.modal-backdrop{position:fixed;inset:0;z-index:250;background:rgba(15,23,42,.34);display:none;align-items:center;justify-content:center;padding:24px}
+.modal-backdrop.open{display:flex}
+.modal{background:#f8fafc;border-radius:16px;width:min(560px,100%);max-height:84vh;overflow:auto;padding:22px;box-shadow:0 24px 60px rgba(15,23,42,.28)}
+.modal h3{font-size:19px;margin:0 0 4px}
+.modal .sub{color:#64748b;font-size:13px;margin:0 0 16px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+
+/* 抽屉 */
+.drawer-backdrop{position:fixed;inset:0;z-index:240;background:rgba(15,23,42,.28);display:none;justify-content:flex-end}
+.drawer-backdrop.open{display:flex}
+.drawer{width:min(440px,100vw);height:100%;background:#f8fafc;padding:20px;display:flex;flex-direction:column;gap:12px;overflow:auto;box-shadow:-12px 0 32px rgba(15,23,42,.18)}
+.drawer h2{font-size:20px;margin:0}
+.drawer .sub{font-size:13px;color:#64748b;margin:0}
+.drawer-close{width:30px;height:30px;border-radius:999px;background:#e2e8f0;color:#475569;font-size:20px;line-height:1}
+.progress-track{height:6px;background:#e2e8f0;border-radius:999px;overflow:hidden}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#2563eb);border-radius:999px;transition:width .3s}
+.sug-card{background:#fff;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(15,23,42,.06);display:flex;flex-direction:column;gap:7px}
+.sug-file{font-size:14px;font-weight:700;word-break:break-all}
+.sug-path{font-size:12px;color:#64748b}
+.sug-arrow{color:#94a3b8}
+.sug-project{background:#eff6ff;color:#1d4ed8;border-radius:8px;padding:7px 9px;font-size:13px;font-weight:700;align-self:flex-start}
+.conf-track{height:5px;background:#e2e8f0;border-radius:999px;flex:1;overflow:hidden}
+.conf-fill{height:100%;background:#10b981;border-radius:999px}
+.conf-label{font-size:12px;font-weight:700;color:#047857}
+.sug-reason{font-size:13px;color:#475569;margin:0}
+.btn-confirm-sug{background:#dcfce7;color:#047857;border-radius:8px;padding:7px 10px;font-size:13px;font-weight:600}
+.btn-skip-sug{background:#f1f5f9;color:#475569;border-radius:8px;padding:7px 10px;font-size:13px;font-weight:600}
+.sec-head{font-size:12px;font-weight:700;color:#334155}
+
+@media(max-width:1180px){
+  .stats-grid{grid-template-columns:repeat(3,minmax(120px,1fr))}
+  .summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .workspace{flex-direction:column}
+  .scan-panel{width:100%}
+}
+@media(max-width:760px){
+  .sidebar{display:none}
+  .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kb-card{grid-template-columns:1fr}
+  .kb-actions{justify-content:flex-start;max-width:none}
+  .info-grid,.grid-2,.form-grid{grid-template-columns:1fr}
+  .tour-caption{font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="cosmic"><div class="aurora"></div></div>
+<div class="toast-host" id="toastHost"></div>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="4" width="4.5" height="16" rx="1.6" fill="url(#g)"/>
+        <rect x="9.75" y="4" width="4.5" height="11" rx="1.6" fill="url(#g)" opacity=".7"/>
+        <rect x="16.5" y="4" width="4.5" height="14" rx="1.6" fill="url(#g)" opacity=".45"/>
+        <defs><linearGradient id="g" x1="3" y1="4" x2="21" y2="20" gradientUnits="userSpaceOnUse"><stop stop-color="#6d5efc"/><stop offset="1" stop-color="#2bb6d6"/></linearGradient></defs>
+      </svg>
+      <span class="logo-text">项目经纬</span>
+    </div>
+    <ul class="nav-list">
+      <li><button class="nav-link active" data-nav="workspace"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="nav-label">工作台</span></button></li>
+      <li><button class="nav-link" data-nav="kanban"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="14" rx="1.5"/></svg><span class="nav-label">看板</span></button></li>
+      <li><button class="nav-link" data-nav="reports"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M8 9h2"/></svg><span class="nav-label">报告</span></button></li>
+      <li><button class="nav-link" data-nav="chat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.6-.8L3 21l1.9-5.4A8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg><span class="nav-label">对话</span></button></li>
+      <li><button class="nav-link" data-nav="messages"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="nav-label">消息</span><span class="unread-badge" id="navUnread">3</span></button></li>
+      <li><button class="nav-link" data-nav="settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="nav-label">设置</span></button></li>
+    </ul>
+    <div class="side-footer">
+      <strong>这是在线演示</strong>
+      <p>全部数据为虚拟示例，运行在你的浏览器里，不读写任何本地文件。</p>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="crumb">项目经纬 · <b id="crumbNow">工作台</b></div>
+      <div class="topbar-right">
+        <span class="demo-pill">演示模式 · 虚拟数据</span>
+        <button class="btn-ghost-top" id="resetDemo">重置演示</button>
+        <button class="btn-tour" id="tourOpenTop">▶ 功能导览</button>
+      </div>
+    </div>
+    <div class="screen-host" id="screenHost">
+      <!-- ========== 工作台 ========== -->
+      <section class="screen active" id="screen-workspace">
+        <div class="page-head">
+          <div>
+            <h1>工作台</h1>
+            <p>把散落的本地文件，自动沉淀成带 AI 记忆的项目库。将左侧扫描到的文件拖拽到右侧项目中完成归档。</p>
+          </div>
+          <button class="btn-primary" id="btnSuggest">✨ 智能分类</button>
+        </div>
+        <div class="workspace">
+          <div class="scan-panel" id="scanPanel">
+            <div class="panel-head">
+              <h2>扫描池</h2>
+              <span class="badge" id="pendingBadge">0 个待处理</span>
+            </div>
+            <div class="filters">
+              <input class="search-input" id="fileSearch" placeholder="搜索文件名"/>
+              <select class="select-input" id="fileExtFilter"><option value="all">全部类型</option></select>
+            </div>
+            <div class="view-toggle">
+              <button class="view-tab active" data-view="pending">待处理</button>
+              <button class="view-tab" data-view="ignored">已忽略</button>
+            </div>
+            <div class="folder-group">
+              <div class="folder-group-head">
+                <span>02_工作中</span>
+                <button class="btn-scan" id="btnScan">扫描</button>
+              </div>
+              <div class="batch-row">
+                <select class="select-input" id="batchSelect"></select>
+              </div>
+              <div class="file-list" id="fileList"></div>
+            </div>
+          </div>
+
+          <div class="organize-panel">
+            <div class="panel-head">
+              <h2>整理区</h2>
+              <div class="panel-toolbar">
+                <label class="toggle-label"><input type="checkbox" id="showArchived" style="vertical-align:-1px"/> 显示已归档（1）</label>
+                <button class="btn-create" id="btnCreateProject">＋ 新建项目</button>
+              </div>
+            </div>
+            <div id="createFormHost"></div>
+            <div class="project-tree" id="projectTree"></div>
+            <div id="archivedHost"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 看板 ========== -->
+      <section class="screen" id="screen-kanban">
+        <div class="kb-page">
+          <div class="kb-head">
+            <div>
+              <h1>项目看板</h1>
+              <p>以项目树方式管理目标文件夹中的项目，识别停滞和待确认事项。</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select style="border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px;background:var(--panel-strong);max-width:360px">
+                <option>/Users/demo/Documents/项目库</option>
+              </select>
+            </div>
+          </div>
+          <div class="stats-grid" id="kbStats"></div>
+          <div class="toolbar">
+            <input id="kbSearch" placeholder="搜索项目名或路径"/>
+            <select id="kbHealthFilter">
+              <option value="all">全部</option>
+              <option value="active">活跃</option>
+              <option value="stalled">停滞</option>
+              <option value="needs_review">待确认</option>
+              <option value="completed">已结束</option>
+            </select>
+            <span class="project-count" id="kbCount">0 个项目</span>
+          </div>
+          <div class="tree" id="kbTree"></div>
+        </div>
+      </section>
+
+      <!-- ========== 文件详情 ========== -->
+      <section class="screen" id="screen-file">
+        <div class="narrow">
+          <button class="back" data-nav="workspace">返回上一级</button>
+          <div class="detail-head">
+            <div>
+              <p class="kicker">文件详情</p>
+              <h1 id="fdName">Q3渠道复盘.docx</h1>
+              <p id="fdPath">/Users/demo/Documents/项目库/渠道增长/Q3渠道复盘.docx</p>
+            </div>
+            <span class="status-pill">已归档</span>
+          </div>
+
+          <div class="section">
+            <h2>文件信息</h2>
+            <div class="info-grid">
+              <div class="info-cell"><strong>当前路径</strong><span>渠道增长/Q3渠道复盘.docx</span></div>
+              <div class="info-cell"><strong>版本数</strong><span>4</span></div>
+              <div class="info-cell"><strong>更新时间</strong><span>2 天前</span></div>
+            </div>
+            <div style="border-top:1px solid #e2e8f0;padding-top:16px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+                <div style="display:flex;flex-direction:column">
+                  <strong>修改建议</strong>
+                  <span style="margin-top:4px;color:#64748b;font-size:12px">上次更新 5 天前</span>
+                </div>
+                <button class="btn-outline" data-toast="修改建议已保存">保存</button>
+              </div>
+              <textarea rows="4" style="width:100%;resize:vertical;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;background:#fff;line-height:1.5" placeholder="记录下一步修改建议、确认事项或需要同步的备注">第 4 节的转化漏斗还缺 8 月数据，等运营给到后补齐；结论部分需要和王磊对一次口径。</textarea>
+              <label style="display:inline-flex;gap:8px;color:#334155;font-size:13px;align-items:center"><input type="checkbox" checked style="width:14px;height:14px"/> 同时推送到消息界面</label>
+            </div>
+            <div style="border-top:1px solid #e2e8f0;margin-top:16px;padding-top:16px">
+              <strong style="display:block;margin-bottom:10px">历史建议</strong>
+              <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px">
+                <li style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <span style="color:#64748b;font-size:12px">12 天前</span>
+                    <span class="chip">已推送</span>
+                  </div>
+                  <p style="margin:6px 0 0;color:#0f172a;line-height:1.5">初稿只覆盖了自然流量，付费渠道部分待补。</p>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>历史归属</h2>
+            <p class="hint-amber">系统按文件名自动归类，如有误可手动调整。</p>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:12px">
+              <strong style="display:block;margin-bottom:8px">检测到可能是同一份材料</strong>
+              <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+                <li style="display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px">
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0">
+                    <span style="font-size:13px;word-break:break-all">渠道增长/Q3渠道复盘_v2.docx</span>
+                    <span class="chip">文件名一致</span>
+                  </div>
+                  <button class="btn-outline" data-toast="已合并到当前历史线">合并</button>
+                </li>
+              </ul>
+            </div>
+            <button class="btn-outline" data-toast="已从当前历史线拆出">从当前历史线拆出</button>
+          </div>
+
+          <div class="section">
+            <div class="section-title-row"><h2>版本时间线</h2><span>4 个版本</span></div>
+            <ol class="timeline" id="fdTimeline"></ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 项目详情 ========== -->
+      <section class="screen" id="screen-project">
+        <div class="narrow">
+          <button class="back" data-nav="kanban">← 返回看板</button>
+          <div class="detail-head">
+            <div>
+              <h1>渠道增长</h1>
+              <p>/Users/demo/Documents/项目库/渠道增长</p>
+              <div class="badges">
+                <span class="badge-pill b-active">活跃</span>
+                <span class="health-reason">今天有文件活动</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;align-self:flex-start;margin-top:6px">
+              <button class="status-btn status-btn-end" data-toast="项目已结束（演示不影响其他数据）">🏁 结束项目</button>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>项目信息</h2>
+            <div class="grid-2">
+              <div><strong>项目名称</strong><span>渠道增长</span></div>
+              <div><strong>路径</strong><span>渠道增长</span></div>
+              <div><strong>最近活动</strong><span>2026/9/3 14:05:00</span></div>
+              <div><strong>直接文件活动</strong><span>2026/9/3 14:05:00</span></div>
+              <div><strong>归档文件数</strong><span>6</span></div>
+              <div><strong>子项目数</strong><span>2</span></div>
+              <div><strong>创建时间</strong><span>2026/6/12 09:20:00</span></div>
+              <div><strong>最后更新</strong><span>2026/9/3 14:05:00</span></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>添加动态</h2>
+            <div style="display:flex;gap:8px">
+              <input style="flex:1;border:1px solid #d7dce7;border-radius:8px;padding:8px 12px" placeholder="输入项目近期动态，如：进入谈判阶段、等待客户反馈…"/>
+              <button class="status-btn" style="background:#2563eb;color:#fff" data-toast="动态已保存">保存</button>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>项目时间线</h2>
+            <div class="timeline">
+              <div class="tl-item"><span class="tl-icon">📝</span><div style="flex:1"><div class="tl-body">Q3 复盘初稿完成，等王磊确认付费渠道口径</div><div class="tl-time">2026/9/3 14:05:00</div></div></div>
+              <div class="tl-item"><span class="tl-icon">🔄</span><div style="flex:1"><div class="tl-body">健康度从「待确认」变为「活跃」</div><div class="tl-time">2026/9/1 10:12:00</div></div></div>
+              <div class="tl-item"><span class="tl-icon">📌</span><div style="flex:1"><div class="tl-body">归档 3 个文件到本项目</div><div class="tl-time">2026/8/28 17:40:00</div></div></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title-row"><h2>归档文件（6）</h2></div>
+            <ul class="assign-list">
+              <li class="assign-item" data-nav="file"><span class="assign-name">Q3渠道复盘.docx</span><span class="assign-time">2026/9/3</span><span class="assign-src">来源：02_工作中/Q3渠道复盘.docx</span></li>
+              <li class="assign-item" data-nav="file"><span class="assign-name">投放数据_8月.xlsx</span><span class="assign-time">2026/8/31</span><span class="assign-src">来源：02_工作中/投放数据_8月.xlsx</span></li>
+              <li class="assign-item" data-nav="file"><span class="assign-name">渠道分层策略_v3.md</span><span class="assign-time">2026/8/28</span><span class="assign-src">来源：02_工作中/渠道分层策略_v3.md</span></li>
+            </ul>
+          </div>
+
+          <div class="section">
+            <h2>导出项目（可携带快照）</h2>
+            <p class="share-notice" style="margin-top:0">将本项目元信息、时间线与各文件的最新 AI 三维度总结，导出为一个 Markdown 文档。可自由发给任何人，对方无需访问你的本机服务。</p>
+            <button class="status-btn" style="background:#6d5efc;color:#fff;margin-top:12px" data-toast="演示模式不产生真实下载">⬇ 导出 Markdown 文档</button>
+          </div>
+
+          <div class="section">
+            <h2>公开分享</h2>
+            <label class="share-label"><input type="checkbox" checked style="width:16px;height:16px;accent-color:#2563eb"/> 公开此项目进展</label>
+            <div class="share-section-title">可公开的归档文件</div>
+            <label class="share-file-item"><input type="checkbox" checked style="width:14px;height:14px;accent-color:#2563eb"/> Q3渠道复盘.docx</label>
+            <label class="share-file-item"><input type="checkbox" checked style="width:14px;height:14px;accent-color:#2563eb"/> 渠道分层策略_v3.md</label>
+            <label class="share-file-item"><input type="checkbox" style="width:14px;height:14px;accent-color:#2563eb"/> 投放数据_8月.xlsx</label>
+            <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="status-btn" style="background:#2563eb;color:#fff" data-toast="分享设置已保存">保存设置</button>
+              <button class="status-btn" style="background:#fee2e2;color:#b91c1c" data-toast="链接已重置，旧链接立即失效">重置链接</button>
+            </div>
+            <div class="share-link">
+              <span class="share-link-url">http://localhost:5173/share/8f3a91c7d2e04b56</span>
+              <button class="share-copy" data-nav="share">打开</button>
+            </div>
+            <p class="share-notice">⚠️ 分享链接可供任何持有者访问，仅开放项目基本进展和已勾选文件的预览。公网访问需要本机服务保持运行，并通过 Cloudflare Tunnel 等工具暴露到公网。若不想暴露本机服务，可使用上方的「导出 Markdown 文档」生成可携带快照，离线分享。</p>
+          </div>
+        </div>
+      </section>
+      <!-- ========== 报告 ========== -->
+      <section class="screen" id="screen-reports">
+        <div class="narrow">
+          <div class="page-head">
+            <div>
+              <h1>报告</h1>
+              <p>按时间范围与来源文件夹聚合扫描与整理数据，生成 Markdown 周报 / 日报。</p>
+            </div>
+          </div>
+          <div class="section">
+            <h2>生成条件</h2>
+            <div class="report-toolbar">
+              <label class="field">开始日期<input type="date" value="2026-08-28"/></label>
+              <label class="field">结束日期<input type="date" value="2026-09-03"/></label>
+              <label class="field">来源文件夹<select><option>全部来源文件夹</option><option>02_工作中</option></select></label>
+              <label class="field">模版<select><option>周报（默认）</option><option>日报</option></select></label>
+              <label class="field" style="color:transparent">生成<button class="btn-primary" id="btnGenReport">生成报告</button></label>
+            </div>
+            <label style="display:inline-flex;gap:8px;align-items:center;font-size:13px;color:#475569;margin-top:12px"><input type="checkbox" checked style="width:14px;height:14px"/> 调用 AI 生成整体总结</label>
+          </div>
+          <div class="section" id="reportResult" style="display:none">
+            <div class="section-title-row"><h2>报告预览</h2><span id="reportMeta"></span></div>
+            <div class="report-preview" id="reportPreview"></div>
+            <div class="report-actions">
+              <button class="btn-outline" data-toast="已复制到剪贴板">复制 Markdown</button>
+              <button class="btn-outline" data-toast="演示模式不产生真实下载">⬇ 导出 .md</button>
+              <button class="btn-feishu" id="btnPushFeishu">⬆ 推送到飞书</button>
+            </div>
+            <div class="push-ok" id="pushOk" style="display:none">
+              <span>✓ 已写入飞书云文档</span>
+              <span style="font-family:monospace;font-size:12px">https://www.feishu.cn/docx/Ycd2doc9demoQ3report</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 对话 ========== -->
+      <section class="screen" id="screen-chat" style="height:100%">
+        <div class="chat-page">
+          <div class="chat-side">
+            <div class="chat-side-head">
+              <span class="chat-side-title">对话历史</span>
+              <button class="btn-new" data-toast="已新建对话">＋</button>
+            </div>
+            <div class="session-list" id="sessionList"></div>
+            <div class="chat-side-foot">
+              <button class="btn-manage" id="btnTemplates">📋 管理模版</button>
+            </div>
+          </div>
+          <div class="chat-area">
+            <div class="messages" id="chatMessages"></div>
+            <div class="input-area">
+              <div class="template-row">
+                <button class="btn-template" data-toast="已填入「周报汇总」模版">📋 周报汇总</button>
+                <button class="btn-template" data-toast="演示中的模版列表可在「管理模版」查看">▾ 选模版</button>
+              </div>
+              <div class="input-row">
+                <textarea rows="3" id="chatInput" placeholder="输入问题，或选择模版后编辑发送… (Enter 发送，Shift+Enter 换行)"></textarea>
+                <button class="btn-send" id="btnSend">发送</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 消息 ========== -->
+      <section class="screen" id="screen-messages">
+        <div class="narrow">
+          <div class="page-head">
+            <div>
+              <h1>消息</h1>
+              <p>项目健康度提醒与待处理事项。</p>
+            </div>
+            <button class="btn-analyze" id="btnAnalyze">🔄 刷新健康分析</button>
+          </div>
+          <div class="analyze-result" id="analyzeResult" style="display:none">
+            <span id="analyzeText"></span>
+            <button style="color:#94a3b8;font-size:16px;padding:0 4px" onclick="document.getElementById('analyzeResult').style.display='none'">×</button>
+          </div>
+          <div class="msg-tabs">
+            <button class="msg-tab active" data-mtab="pending">待处理 <span class="tab-count" id="cntPending">3</span></button>
+            <button class="msg-tab" data-mtab="snoozed">稍后提醒 <span class="tab-count" id="cntSnoozed">1</span></button>
+            <button class="msg-tab" data-mtab="all">全部</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px" id="msgList"></div>
+        </div>
+      </section>
+
+      <!-- ========== 设置 ========== -->
+      <section class="screen" id="screen-settings">
+        <div class="narrow">
+          <div class="page-head">
+            <div>
+              <h1>设置</h1>
+              <p>配置来源与目标文件夹、AI Provider、项目健康度阈值与飞书云文档推送。</p>
+            </div>
+          </div>
+          <div class="set-tabs">
+            <button class="set-tab active" data-stab="folders">文件夹</button>
+            <button class="set-tab" data-stab="ai">AI Provider</button>
+            <button class="set-tab" data-stab="health">健康度阈值</button>
+            <button class="set-tab" data-stab="feishu">飞书云文档推送</button>
+          </div>
+
+          <div class="section set-panel" data-spanel="folders">
+            <h2>文件夹</h2>
+            <div class="folder-row">
+              <div><div class="folder-path">/Users/demo/Desktop/02_工作中</div><div style="font-size:12px;color:#64748b;margin-top:3px">扫描间隔 5 分钟 · 最近扫描 2026/9/3 14:05</div></div>
+              <div style="display:flex;gap:8px;align-items:center"><span class="folder-kind kind-source">来源</span><button class="btn-outline" data-toast="演示模式不修改真实文件夹">编辑</button></div>
+            </div>
+            <div class="folder-row">
+              <div><div class="folder-path">/Users/demo/Documents/项目库</div><div style="font-size:12px;color:#64748b;margin-top:3px">归档落地目录 · 12 个项目</div></div>
+              <div style="display:flex;gap:8px;align-items:center"><span class="folder-kind kind-target">目标</span><button class="btn-outline" data-toast="演示模式不修改真实文件夹">编辑</button></div>
+            </div>
+            <button class="btn-create" style="margin-top:12px" data-toast="演示模式不修改真实文件夹">＋ 添加文件夹</button>
+          </div>
+
+          <div class="section set-panel" data-spanel="ai" style="display:none">
+            <h2>AI Provider</h2>
+            <div class="form-grid">
+              <label class="field">Provider<select><option>openai（OpenAI 兼容）</option><option>ollama（本地模型）</option><option>xinghe</option><option>custom</option></select></label>
+              <label class="field">模型<input value="claude-sonnet-5"/></label>
+              <label class="field full">Base URL<input value="https://api.example.com/v1/chat/completions"/></label>
+              <label class="field full">API Key<input type="password" value="sk-demo-key-not-real"/></label>
+              <label class="field">温度<input value="0.3"/></label>
+              <label class="field">最大 tokens<input value="2048"/></label>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+              <button class="btn-primary" id="btnTestAI">测试连接</button>
+              <button class="btn-outline" data-toast="AI 设置已保存">保存</button>
+            </div>
+            <div class="test-ok" id="aiTestOk" style="display:none">✓ 连接成功，模型 claude-sonnet-5 可用</div>
+            <p class="share-notice">发送给模型的文件内容默认截断在 50KB。API Key 明文保存在本地 SQLite，仅适合本机使用。</p>
+          </div>
+
+          <div class="section set-panel" data-spanel="health" style="display:none">
+            <h2>项目健康度阈值</h2>
+            <div class="form-grid">
+              <label class="field">活跃天数（≤ 视为活跃）<input value="7"/></label>
+              <label class="field">待确认天数（≤ 视为待确认）<input value="21"/></label>
+            </div>
+            <p class="share-notice">超过「待确认天数」仍无活动的项目会标为停滞。当前示例：7 天内有活动 → 活跃；7～21 天 → 待确认；超过 21 天 → 停滞。</p>
+            <button class="btn-primary" style="margin-top:12px" data-toast="阈值已保存">保存</button>
+          </div>
+
+          <div class="section set-panel" data-spanel="feishu" style="display:none">
+            <h2>飞书云文档推送</h2>
+            <div class="form-grid">
+              <label class="field">App ID<input value="cli_a1b2c3demo"/></label>
+              <label class="field">App Secret<input type="password" value="demo-secret-not-real"/></label>
+              <label class="field">目标文档 ID（可选）<input value="Ycd2doc9demoQ3report"/></label>
+              <label class="field">Owner Open ID（可选）<input value="ou_demo0011"/></label>
+              <label class="field full">Base URL<input value="https://open.feishu.cn"/></label>
+            </div>
+            <label style="display:inline-flex;gap:8px;align-items:center;font-size:13px;color:#475569;margin-top:12px"><input type="checkbox" checked style="width:14px;height:14px"/> 启用飞书推送</label>
+            <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+              <button class="btn-primary" id="btnTestFeishu">测试连接</button>
+              <button class="btn-outline" data-toast="飞书配置已保存">保存</button>
+            </div>
+            <div class="test-ok" id="feishuTestOk" style="display:none">✓ 已成功换取 tenant_access_token，凭证有效</div>
+            <p class="share-notice">留空「目标文档 ID」时，首次推送会自动新建一篇「项目进展报告」并记住其 ID；填写后则始终覆盖该文档。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 分享页（访客视角） ========== -->
+      <section class="screen" id="screen-share">
+        <div class="share-page">
+          <button class="back" data-nav="project">← 返回项目详情（演示）</button>
+          <div class="share-hero">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+              <div>
+                <p class="kicker">公开分享 · 访客视角</p>
+                <h1>渠道增长</h1>
+                <p style="color:var(--muted);margin:0">项目进展快照 · 更新于 2026/9/3 14:05</p>
+              </div>
+              <span class="badge-pill b-active">活跃</span>
+            </div>
+            <div class="visitor-note">访客无需登录即可查看。仅展示项目概览与项目所有者勾选的文件，不含本机路径与其他项目。</div>
+          </div>
+          <div class="section">
+            <h2>项目概览</h2>
+            <div class="grid-2">
+              <div><strong>健康状态</strong><span>活跃 · 今天有文件活动</span></div>
+              <div><strong>归档文件</strong><span>2 个已公开 / 共 6 个</span></div>
+              <div><strong>最近活动</strong><span>2026/9/3 14:05</span></div>
+              <div><strong>项目周期</strong><span>2026/6/12 起</span></div>
+            </div>
+          </div>
+          <div class="section">
+            <h2>最新动态</h2>
+            <div class="timeline">
+              <div class="tl-item"><span class="tl-icon">📝</span><div style="flex:1"><div class="tl-body">Q3 复盘初稿完成，等王磊确认付费渠道口径</div><div class="tl-time">2026/9/3 14:05</div></div></div>
+              <div class="tl-item"><span class="tl-icon">📌</span><div style="flex:1"><div class="tl-body">归档 3 个文件到本项目</div><div class="tl-time">2026/8/28 17:40</div></div></div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title-row"><h2>公开文件</h2><span>2 个</span></div>
+            <div class="version-item" style="margin-bottom:12px">
+              <div class="version-head"><div class="version-head-left"><strong>Q3渠道复盘.docx</strong><span class="chip">v4</span></div><time>2 天前</time></div>
+              <div class="diff-block"><strong>当前版本摘要</strong><p>复盘了 Q3 三条主要获客渠道的投入产出，其中私域转化率环比提升 4.2 个百分点，付费渠道 ROI 下滑至 1.8，建议下季度收缩信息流预算。</p></div>
+            </div>
+            <div class="version-item">
+              <div class="version-head"><div class="version-head-left"><strong>渠道分层策略_v3.md</strong><span class="chip">v3</span></div><time>6 天前</time></div>
+              <div class="diff-block"><strong>当前版本摘要</strong><p>把渠道按获客成本与留存质量分为四层，明确 S/A 层加投、B 层观察、C 层退出的判定阈值。</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="tour-bar hidden" id="tourBar">
+  <span class="tour-step" id="tourStep">1 / 10</span>
+  <div class="tour-caption" id="tourCaption"></div>
+  <div class="tour-btns">
+    <button id="tourPrev">上一步</button>
+    <button id="tourAuto">自动播放</button>
+    <button class="primary" id="tourNext">下一步</button>
+    <button class="tour-close" id="tourClose">✕</button>
+  </div>
+</div>
+<button class="tour-open" id="tourOpen">▶ 开始功能导览</button>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<div class="drawer-backdrop" id="drawerBackdrop">
+  <div class="drawer" id="drawerBox"></div>
+</div>
+
+<script>
+/* ============ 虚拟数据 ============ */
+const SEED = {
+  files: [
+    {id:1,name:'Q3渠道复盘.docx',ext:'.docx',dir:'02_工作中',status:'pending'},
+    {id:2,name:'投放数据_8月.xlsx',ext:'.xlsx',dir:'02_工作中/数据',status:'pending'},
+    {id:3,name:'渠道分层策略_v3.md',ext:'.md',dir:'02_工作中',status:'pending'},
+    {id:4,name:'客户访谈记录-李总.md',ext:'.md',dir:'02_工作中/访谈',status:'pending'},
+    {id:5,name:'新品定价测算.xlsx',ext:'.xlsx',dir:'02_工作中',status:'pending'},
+    {id:6,name:'供应商比价表.xlsx',ext:'.xlsx',dir:'02_工作中/采购',status:'pending'},
+    {id:7,name:'官网改版需求.md',ext:'.md',dir:'02_工作中',status:'pending'},
+    {id:8,name:'招聘JD-增长负责人.docx',ext:'.docx',dir:'02_工作中/人事',status:'pending'},
+    {id:9,name:'截图2026-09-01.png',ext:'.png',dir:'02_工作中',status:'ignored'},
+    {id:10,name:'临时备忘.txt',ext:'.txt',dir:'02_工作中',status:'ignored'}
+  ],
+  projects: [
+    {id:1,name:'渠道增长',path:'渠道增长',parent:null,status:'active',health:'active',reason:'今天有文件活动',
+     files:['Q3渠道复盘.docx','渠道分层策略_v3.md','投放数据_8月.xlsx','渠道SOP.md','竞品投放拆解.md','获客成本模型.xlsx'],
+     owner:'孙宁',collaborators:['王磊','周颖'],next:'确认付费渠道口径',activity:'9月3日 14:05',update:'Q3 复盘初稿完成，等王磊确认付费渠道口径',children:2},
+    {id:2,name:'私域运营',path:'渠道增长/私域运营',parent:1,status:'active',health:'active',reason:'2 天前有文件活动',
+     files:['社群SOP_v2.md','企微标签体系.xlsx'],owner:'周颖',collaborators:['孙宁'],next:'补齐 8 月留存数据',activity:'9月1日 11:20',update:'社群 SOP 更新到 v2',children:0},
+    {id:3,name:'付费投放',path:'渠道增长/付费投放',parent:1,status:'active',health:'needs_review',reason:'12 天未活动，需要确认',
+     files:['信息流账户结构.xlsx'],owner:'',collaborators:[],next:'',activity:'8月22日 16:30',update:'',children:0},
+    {id:4,name:'新品上市',path:'新品上市',parent:null,status:'active',health:'needs_review',reason:'15 天未活动，需要确认',
+     files:['新品定价测算.xlsx','包装打样反馈.docx','上市节奏排期.xlsx'],owner:'陈曦',collaborators:['孙宁','李航','周颖','王磊'],next:'定价方案过会',activity:'8月19日 09:45',update:'定价测算第二版已给到财务',children:1},
+    {id:5,name:'包装与供应链',path:'新品上市/包装与供应链',parent:4,status:'active',health:'stalled',reason:'34 天未活动',
+     files:['供应商比价表.xlsx'],owner:'李航',collaborators:[],next:'重新收集报价',activity:'7月31日 14:10',update:'',children:0},
+    {id:6,name:'官网改版',path:'官网改版',parent:null,status:'active',health:'stalled',reason:'41 天未活动',
+     files:['官网改版需求.md','信息架构草图.png'],owner:'',collaborators:['陈曦'],next:'',activity:'7月24日 10:05',update:'等设计资源排期',children:0},
+    {id:7,name:'2026H1复盘',path:'2026H1复盘',parent:null,status:'active',health:'completed',reason:'项目已结束',
+     files:['H1经营复盘.docx','H1数据附表.xlsx'],owner:'孙宁',collaborators:['陈曦','王磊'],next:'',activity:'7月8日 18:00',update:'复盘会已完成，结论已归档',children:0},
+    {id:8,name:'2025年度归档',path:'2025年度归档',parent:null,status:'archived',health:'completed',reason:'项目已结束',
+     files:['2025总结.docx'],owner:'',collaborators:[],next:'',activity:'2025年12月28日',update:'',children:0}
+  ],
+  versions: [
+    {n:4,type:'modified',time:'2 天前',change:'新增第 4 节「付费渠道 ROI 拆解」，并把结论部分从 3 条压缩为 2 条；删除了 8 月自然流量的重复表格。',content:'复盘了 Q3 三条主要获客渠道的投入产出，其中私域转化率环比提升 4.2 个百分点，付费渠道 ROI 下滑至 1.8，建议下季度收缩信息流预算。',impact:'核心结论已成形，可进入评审。付费渠道数据口径仍待王磊确认，是唯一阻塞项。'},
+    {n:3,type:'modified',time:'6 天前',change:'补入 8 月投放数据，重写「私域转化」小节，图表由 3 张增加到 5 张。',content:'在前一版基础上补齐了 8 月数据，私域与自然流量部分已完整，付费渠道仅有 7 月数据。',impact:'数据完整度从约 60% 提升到 80%，距离可评审还差付费渠道部分。'},
+    {n:2,type:'modified',time:'13 天前',change:'把大纲扩写为正文，新增「渠道分层」框架图，删除了初稿中的待办清单。',content:'形成了完整的章节结构与分析框架，数据仅覆盖 7 月自然流量。',impact:'从大纲进入正文撰写阶段，需要运营侧提供投放数据才能继续。'},
+    {n:1,type:'created',time:'21 天前',change:'',content:'',impact:''}
+  ],
+  messages: [
+    {id:1,type:'health_alert',tab:'pending',unread:true,title:'项目「官网改版」停滞',health:'停滞',hc:'#dc2626',subject:'官网改版',body:'该项目已 41 天无文件活动，最新动态停留在「等设计资源排期」。建议确认是否继续推进，或直接结束以保持看板清晰。',project:'官网改版'},
+    {id:2,type:'manual_suggestion',tab:'pending',unread:true,title:'修改建议',health:'',hc:'',subject:'Q3渠道复盘.docx',body:'第 4 节的转化漏斗还缺 8 月数据，等运营给到后补齐；结论部分需要和王磊对一次口径。',project:'渠道增长'},
+    {id:3,type:'health_alert',tab:'pending',unread:false,title:'项目「新品上市」需要关注',health:'需关注',hc:'#d97706',subject:'新品上市',body:'15 天无活动，下一步「定价方案过会」尚未推进。子项目「包装与供应链」已停滞 34 天。',project:'新品上市'},
+    {id:4,type:'health_alert',tab:'snoozed',unread:false,title:'项目「付费投放」需要关注',health:'需关注',hc:'#d97706',subject:'渠道增长/付费投放',body:'12 天无活动且未分配负责人，建议指派负责人或并入上级项目。',project:'渠道增长/付费投放',remind:'2026/9/6 09:00:00'}
+  ],
+  sessions: [
+    {id:1,title:'Q3 渠道复盘进展如何？',date:'2026-09-03',active:true},
+    {id:2,title:'哪些项目停滞超过一个月',date:'2026-09-01',active:false},
+    {id:3,title:'帮我起草本周周报',date:'2026-08-29',active:false}
+  ],
+  chat: [
+    {role:'user',text:'Q3 渠道复盘现在到哪一步了？还差什么？'},
+    {role:'assistant',text:'当前进展到第 4 版，核心结论已成形，距离可评审只差一项。\n\n已完成：三条主要获客渠道的投入产出分析，私域转化率环比提升 4.2 个百分点的结论已经过两版数据校验。\n\n唯一阻塞项：付费渠道的 ROI 口径需要和王磊确认。从 v3 到 v4 的变化看，8 月投放数据已经补入，但付费部分的计算方式和 7 月不一致，这也是你在「修改建议」里记下的那条。\n\n另外提醒一点：同属「渠道增长」的子项目「付费投放」已经 12 天无活动且没有负责人，如果复盘结论要落到具体投放动作上，这个子项目需要先有人接手。',
+     cites:['Q3渠道复盘.docx','渠道分层策略_v3.md','投放数据_8月.xlsx']},
+    {role:'user',text:'那「新品上市」这条线呢？'},
+    {role:'assistant',text:'这条线的状态需要留意，健康度是「待确认」，15 天无活动。\n\n定价测算的第二版已经给到财务，但之后就没有新的文件变更，下一步「定价方案过会」一直没有推进记录。\n\n更值得关注的是它的子项目「包装与供应链」，已经停滞 34 天，最后一次活动是 7 月 31 日更新供应商比价表。如果打样和报价没有进展，上市节奏排期里的时间点大概率要重排。',
+     cites:['新品定价测算.xlsx','供应商比价表.xlsx','上市节奏排期.xlsx']}
+  ],
+  suggestions: [
+    {file:'客户访谈记录-李总.md',path:'02_工作中/访谈',project:'渠道增长',ppath:'渠道增长',conf:92,reason:'访谈内容集中在获客渠道与转化路径，与「渠道增长」项目下已有的渠道分层策略、复盘文档主题高度一致。'},
+    {file:'新品定价测算.xlsx',path:'02_工作中',project:'新品上市',ppath:'新品上市',conf:88,reason:'文件名与内容均指向新品定价，项目「新品上市」的下一步正是「定价方案过会」。'},
+    {file:'供应商比价表.xlsx',path:'02_工作中/采购',project:'包装与供应链',ppath:'新品上市/包装与供应链',conf:85,reason:'比价对象为包装供应商，该子项目已有同类文件「供应商比价表.xlsx」的早期版本。'},
+    {file:'官网改版需求.md',path:'02_工作中',project:'官网改版',ppath:'官网改版',conf:81,reason:'需求文档明确提到官网信息架构调整，与「官网改版」项目直接对应。'},
+    {file:'招聘JD-增长负责人.docx',path:'02_工作中/人事',project:'渠道增长',ppath:'渠道增长',conf:54,reason:'岗位描述涉及渠道增长职责，但属于人事类文件，可能应单独建项目，置信度较低。',low:true},
+    {file:'投放数据_8月.xlsx',path:'02_工作中/数据',project:'付费投放',ppath:'渠道增长/付费投放',conf:48,reason:'数据同时被「渠道增长」复盘和「付费投放」引用，无法确定主归属。',low:true}
+  ]
+};
+const REPORT = `# 项目进展报告
+
+**统计区间**：2026-08-28 ~ 2026-09-03
+**来源文件夹**：全部（1 个）
+**生成时间**：2026-09-03 21:40
+
+## 一、整体概览
+
+| 指标 | 数值 |
+|---|---|
+| 扫描次数 | 14 |
+| 新增文件 | 9 |
+| 修改文件 | 23 |
+| 删除文件 | 2 |
+| 完成归档 | 11 |
+| 活跃项目 | 3 |
+
+## 二、AI 整体总结
+
+本周重心在「渠道增长」，Q3 复盘从大纲推进到第 4 版，核心结论已成形，只剩付费渠道 ROI 口径待确认——这是本周唯一的硬阻塞项，且已连续两周出现在待办中。
+
+需要留意两条停滞线。「新品上市」15 天无文件活动，定价方案过会未推进；其子项目「包装与供应链」已停滞 34 天，若打样与报价继续没有进展，上市排期需要重排。「官网改版」停滞 41 天，最新动态仍是「等设计资源排期」，建议本周内确认是否继续。
+
+「私域运营」是本周唯一稳定推进的子项目，社群 SOP 更新到 v2，企微标签体系同步调整。
+
+## 三、项目明细
+
+### 渠道增长 · 活跃
+- 最近活动：9月3日 14:05
+- 本周变更：6 个文件，其中 Q3渠道复盘.docx 更新 2 版
+- 最新动态：Q3 复盘初稿完成，等王磊确认付费渠道口径
+
+### 新品上市 · 待确认
+- 最近活动：8月19日 09:45
+- 本周变更：0 个文件
+- 风险：子项目「包装与供应链」停滞 34 天
+
+### 官网改版 · 停滞
+- 最近活动：7月24日 10:05
+- 本周变更：0 个文件
+- 建议：确认是否继续推进，或结束项目
+
+## 四、本周归档清单
+
+| 文件 | 归入项目 | 时间 |
+|---|---|---|
+| Q3渠道复盘.docx | 渠道增长 | 09-03 |
+| 投放数据_8月.xlsx | 渠道增长 | 08-31 |
+| 渠道分层策略_v3.md | 渠道增长 | 08-28 |
+| 社群SOP_v2.md | 渠道增长/私域运营 | 09-01 |
+`;
+/* ============ 状态 ============ */
+const STORE_KEY = 'pfk-demo-v1';
+let S = load();
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) return Object.assign(fresh(), JSON.parse(raw));
+  }catch(e){}
+  return fresh();
+}
+function fresh(){
+  return {
+    files: JSON.parse(JSON.stringify(SEED.files)),
+    assigned: {},              // projectId -> [filename]
+    justAdded: {},             // projectId -> filename
+    view: 'pending',
+    search: '',
+    ext: 'all',
+    showArchived: false,
+    scanned: true,
+    msgTab: 'pending',
+    msgState: {},              // id -> 'done'|'dismissed'
+    followUp: {},              // projectId -> true
+    completed: {},             // projectId -> true
+    events: {},                // projectId -> [text]
+    reportDone: false,
+    pushed: false
+  };
+}
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){} }
+
+/* ============ 工具 ============ */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(msg){
+  const host = $('#toastHost');
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .25s'; setTimeout(()=>el.remove(),260); }, 2400);
+}
+function openModal(title, sub, body, okText, onOk){
+  $('#modalBox').innerHTML = `<h3>${esc(title)}</h3><p class="sub">${esc(sub)}</p><div>${body}</div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="modalCancel">取消</button>
+      ${okText?`<button class="btn-primary" id="modalOk">${esc(okText)}</button>`:''}
+    </div>`;
+  $('#modalBackdrop').classList.add('open');
+  $('#modalCancel').onclick = closeModal;
+  if(okText) $('#modalOk').onclick = () => { const keep = onOk && onOk(); if(!keep) closeModal(); };
+}
+function closeModal(){ $('#modalBackdrop').classList.remove('open'); }
+$('#modalBackdrop').onclick = e => { if(e.target.id==='modalBackdrop') closeModal(); };
+function closeDrawer(){ $('#drawerBackdrop').classList.remove('open'); }
+$('#drawerBackdrop').onclick = e => { if(e.target.id==='drawerBackdrop') closeDrawer(); };
+
+const CRUMBS = {workspace:'工作台',kanban:'项目看板',file:'文件详情',project:'项目详情',reports:'报告',chat:'对话',messages:'消息',settings:'设置',share:'公开分享（访客视角）'};
+const NAV_OF = {workspace:'workspace',kanban:'kanban',file:'workspace',project:'kanban',reports:'reports',chat:'chat',messages:'messages',settings:'settings',share:'kanban'};
+let current = 'workspace';
+function show(name){
+  current = name;
+  $$('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-'+name));
+  $('#crumbNow').textContent = CRUMBS[name] || name;
+  $$('.nav-link').forEach(b => b.classList.toggle('active', b.dataset.nav === NAV_OF[name]));
+  $('#screenHost').scrollTop = 0;
+}
+$$('.nav-link').forEach(b => b.onclick = () => show(b.dataset.nav));
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-nav]');
+  if(t && !t.classList.contains('nav-link')){ show(t.dataset.nav); return; }
+  const ts = e.target.closest('[data-toast]');
+  if(ts) toast(ts.dataset.toast);
+});
+
+/* ============ 工作台：扫描池 ============ */
+function visibleFiles(){
+  return S.files.filter(f =>
+    f.status === (S.view === 'pending' ? 'pending' : 'ignored') &&
+    (!S.search || f.name.toLowerCase().includes(S.search.toLowerCase())) &&
+    (S.ext === 'all' || f.ext === S.ext)
+  );
+}
+function renderScanPool(){
+  const pending = S.files.filter(f => f.status === 'pending').length;
+  $('#pendingBadge').textContent = pending + ' 个待处理';
+  const sel = $('#fileExtFilter');
+  const exts = [...new Set(S.files.map(f => f.ext))];
+  if(sel.options.length <= 1) exts.forEach(x => sel.add(new Option(x, x)));
+  const bs = $('#batchSelect');
+  if(!bs.options.length){
+    bs.add(new Option(`2026/9/3 14:05:00 · 新增3 修改5 删除0 · 待处理${pending}`, 'a'));
+    bs.add(new Option('2026/9/2 09:30:00 · 新增2 修改4 删除1 · 待处理0', 'b'));
+    bs.add(new Option('2026/9/1 18:12:00 · 新增4 修改2 删除0 · 待处理0', 'c'));
+  } else {
+    bs.options[0].text = `2026/9/3 14:05:00 · 新增3 修改5 删除0 · 待处理${pending}`;
+  }
+  const list = $('#fileList');
+  if(!S.scanned && S.view === 'pending'){
+    list.innerHTML = `<div class="empty-group">暂无扫描记录，请先扫描。</div>`;
+    return;
+  }
+  const items = visibleFiles();
+  if(!items.length){
+    list.innerHTML = `<div class="empty-group">${S.view==='ignored'?'暂无已忽略文件。':'暂无待处理文件，请先扫描。'}</div>`;
+    return;
+  }
+  list.innerHTML = items.map(f => `
+    <div class="file-card" data-file="${f.id}" ${f.status==='pending'?'draggable="true"':''}>
+      <div class="file-name">${esc(f.name)}</div>
+      <div class="file-meta"><span>${esc(f.ext||'无扩展名')}</span><span>${esc(f.dir||'根目录')}</span></div>
+      <div class="file-card-actions">
+        ${f.status==='pending'
+          ? `<button class="btn-ignore" data-ignore="${f.id}">忽略</button>`
+          : `<button class="btn-restore-file" data-restore="${f.id}">↩ 恢复</button>`}
+      </div>
+    </div>`).join('');
+}
+$$('.view-tab').forEach(b => b.onclick = () => {
+  S.view = b.dataset.view; save();
+  $$('.view-tab').forEach(x => x.classList.toggle('active', x === b));
+  renderScanPool();
+});
+$('#fileSearch').oninput = e => { S.search = e.target.value; save(); renderScanPool(); };
+$('#fileExtFilter').onchange = e => { S.ext = e.target.value; save(); renderScanPool(); };
+$('#btnScan').onclick = function(){
+  const btn = this; btn.textContent = '扫描中…'; btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = '扫描'; btn.disabled = false;
+    S.scanned = true; save(); renderScanPool();
+    toast('扫描完成：新增 3 个，修改 5 个');
+  }, 900);
+};
+$('#fileList').addEventListener('click', e => {
+  const ig = e.target.closest('[data-ignore]');
+  if(ig){ const f = S.files.find(x => x.id == ig.dataset.ignore); f.status='ignored'; save(); renderScanPool(); toast(`已忽略 ${f.name}`); return; }
+  const rs = e.target.closest('[data-restore]');
+  if(rs){ const f = S.files.find(x => x.id == rs.dataset.restore); f.status='pending'; save(); renderScanPool(); toast(`已恢复 ${f.name}`); return; }
+  const card = e.target.closest('[data-file]');
+  if(card) show('file');
+});
+/* ============ 工作台：整理区 ============ */
+function projFiles(p){ return (SEED.projects.find(x=>x.id===p.id).files || []).concat(S.assigned[p.id] || []); }
+function activeRoots(){ return SEED.projects.filter(p => p.status==='active' && p.parent===null); }
+function childrenOf(id){ return SEED.projects.filter(p => p.parent === id); }
+
+function wsCard(p){
+  const files = projFiles(p);
+  const shown = files.slice(0,5);
+  const just = S.justAdded[p.id];
+  return `<div class="project-card" data-drop="${p.id}">
+    <div class="project-card-head">
+      <span class="project-name">${esc(p.name)}</span>
+      <span class="badge">${files.length} 个文件</span>
+    </div>
+    ${p.path.includes('/') ? `<div class="project-path">📁 ${esc(p.path)}</div>` : ''}
+    ${shown.length ? `<ul class="assignment-list">${shown.map(f=>`<li class="assignment-item ${just===f?'just-added':''}">${esc(f)}${just===f?' · 刚归档':''}</li>`).join('')}
+      ${files.length>5?`<li class="assignment-more">还有 ${files.length-5} 个…</li>`:''}</ul>` : ''}
+    <div class="project-actions">
+      <button class="btn-child" data-act="child" data-p="${p.id}">＋ 子项目</button>
+      <button class="btn-finalize" data-act="finalize" data-p="${p.id}" title="保留同名文件的最新版本，旧版本移入「其他」子目录">📌 保留最终版</button>
+      <button class="btn-archive" data-act="archive" data-p="${p.id}">📦 归档</button>
+      <button class="btn-delete" data-act="delete" data-p="${p.id}" title="只删除项目记录，不删除磁盘目录和文件">删除</button>
+    </div>
+    <div class="drop-hint" style="display:none">松手以归档到此项目</div>
+  </div>`;
+}
+function wsNode(p){
+  const kids = childrenOf(p.id);
+  return `<div>${wsCard(p)}${kids.length?`<div class="project-children">${kids.map(wsNode).join('')}</div>`:''}</div>`;
+}
+function renderOrganize(){
+  const roots = activeRoots();
+  $('#projectTree').innerHTML = roots.length ? roots.map(wsNode).join('') : `<div class="empty-glass">暂无活跃项目，点击「新建项目」开始。</div>`;
+  const arch = SEED.projects.filter(p => p.status==='archived');
+  $('#archivedHost').innerHTML = (S.showArchived && arch.length)
+    ? `<div style="color:var(--muted);font-size:13px;font-weight:600;margin:8px 0 4px;letter-spacing:.02em">已归档项目</div>
+       ${arch.map(p=>`<div class="project-card" style="opacity:.65;background:rgba(255,255,255,.4)">
+         <div class="project-card-head"><span class="project-name">${esc(p.name)}</span><span class="badge">${p.files.length} 个文件</span></div>
+         <div class="project-actions"><button style="background:rgba(43,182,214,.16);color:#1d7e95" data-toast="已取消归档（演示）">↩ 取消归档</button></div></div>`).join('')}`
+    : '';
+}
+$('#showArchived').onchange = e => { S.showArchived = e.target.checked; save(); renderOrganize(); };
+$('#btnCreateProject').onclick = () => openCreateForm('');
+function openCreateForm(prefill){
+  $('#createFormHost').innerHTML = `<div class="createForm" style="display:flex;gap:8px;padding:10px;background:rgba(124,140,255,.06);border-radius:10px">
+    <input class="search-input" id="newPath" placeholder="项目路径，支持多级，如：研究/目标/子目标" value="${esc(prefill)}"/>
+    <button class="btn-create" id="newOk">确认</button>
+    <button class="btn-ghost" id="newCancel">取消</button></div>`;
+  const inp = $('#newPath'); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
+  $('#newCancel').onclick = () => $('#createFormHost').innerHTML = '';
+  $('#newOk').onclick = () => {
+    const v = inp.value.trim();
+    if(!v) return;
+    if(v.startsWith('/') || v.includes('..')){ toast('路径不能以 / 开头或包含 ..'); return; }
+    $('#createFormHost').innerHTML = '';
+    toast(`演示模式下项目结构固定，真实使用时会在目标目录创建「${v}」`);
+  };
+}
+$('#projectTree').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if(!b) return;
+  const p = SEED.projects.find(x => x.id == b.dataset.p);
+  const act = b.dataset.act;
+  if(act === 'child') openCreateForm(p.path + '/');
+  if(act === 'finalize') toast(`「${p.name}」中没有需要整理的多版本文件`);
+  if(act === 'archive') openModal('归档项目', `确认归档项目「${p.name}」？归档后将折叠显示。`, '', '确认归档', () => toast('演示模式不改变项目结构'));
+  if(act === 'delete') openModal('删除项目记录', `确认删除项目「${p.path}」？这只会撤销项目记录和归档记录，不会删除磁盘上的目录和文件。当前项目已有 ${projFiles(p).length} 个文件记录。`, '', '确认删除', () => toast('演示模式不删除任何数据'));
+});
+
+/* 拖拽归档 */
+let dragFile = null, ghost = null;
+$('#fileList').addEventListener('dragstart', e => {
+  const card = e.target.closest('[data-file]');
+  if(!card) return;
+  dragFile = S.files.find(f => f.id == card.dataset.file);
+  card.classList.add('dragging');
+  e.dataTransfer.setData('text/plain', dragFile.name);
+  e.dataTransfer.effectAllowed = 'copy';
+  $$('.project-actions').forEach(a => a.style.display = 'none');
+});
+$('#fileList').addEventListener('dragend', e => {
+  $$('.file-card').forEach(c => c.classList.remove('dragging'));
+  $$('.project-actions').forEach(a => a.style.display = '');
+  $$('.project-card').forEach(c => { c.classList.remove('drop-target'); const h=c.querySelector('.drop-hint'); if(h) h.style.display='none'; });
+  dragFile = null;
+});
+$('#projectTree').addEventListener('dragover', e => {
+  const card = e.target.closest('[data-drop]');
+  if(!card || !dragFile) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = 'copy';
+  $$('.project-card').forEach(c => { if(c!==card){ c.classList.remove('drop-target'); const h=c.querySelector('.drop-hint'); if(h) h.style.display='none'; } });
+  card.classList.add('drop-target');
+  const hint = card.querySelector('.drop-hint'); if(hint) hint.style.display = 'block';
+});
+$('#projectTree').addEventListener('dragleave', e => {
+  const card = e.target.closest('[data-drop]');
+  if(card && !card.contains(e.relatedTarget)){ card.classList.remove('drop-target'); const h=card.querySelector('.drop-hint'); if(h) h.style.display='none'; }
+});
+$('#projectTree').addEventListener('drop', e => {
+  const card = e.target.closest('[data-drop]');
+  if(!card || !dragFile) return;
+  e.preventDefault();
+  const pid = +card.dataset.drop;
+  const p = SEED.projects.find(x => x.id === pid);
+  const existing = projFiles(p);
+  let name = dragFile.name;
+  if(existing.includes(name)){
+    const dot = name.lastIndexOf('.');
+    const base = dot>0 ? name.slice(0,dot) : name;
+    const ext = dot>0 ? name.slice(dot) : '';
+    let v = 1;
+    while(existing.includes(`${base}_v${v}${ext}`)) v++;
+    name = `${base}_v${v}${ext}`;
+  }
+  (S.assigned[pid] = S.assigned[pid] || []).push(name);
+  S.justAdded[pid] = name;
+  S.files = S.files.filter(f => f.id !== dragFile.id);
+  const moved = name !== dragFile.name;
+  dragFile = null; save();
+  renderScanPool(); renderOrganize(); renderKanban();
+  toast(moved ? `已归档到「${p.name}」，同名文件自动生成 ${name}` : `已归档到「${p.name}」，正在生成 AI 总结…`);
+});
+/* ============ 智能分类抽屉 ============ */
+$('#btnSuggest').onclick = () => {
+  const btn = $('#btnSuggest');
+  btn.textContent = '分析中…'; btn.disabled = true;
+  $('#drawerBackdrop').classList.add('open');
+  const total = SEED.suggestions.length;
+  $('#drawerBox').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div><h2>智能分类建议</h2><p class="sub">AI 根据文件内容和项目语义推荐最合适的项目。</p></div>
+      <button class="drawer-close" id="drawerClose">×</button>
+    </div>
+    <div id="sugProgress">
+      <div class="progress-track"><div class="progress-fill" id="progFill"></div></div>
+      <div style="font-size:12px;color:#64748b;margin-top:6px" id="progText">已分析 0 / ${total} 个文件…</div>
+    </div>
+    <div id="sugBody"></div>`;
+  $('#drawerClose').onclick = () => { closeDrawer(); btn.textContent='✨ 智能分类'; btn.disabled=false; };
+  let n = 0;
+  const timer = setInterval(() => {
+    const fill = $('#progFill'), txt = $('#progText');
+    if(!fill || !txt){ clearInterval(timer); btn.textContent = '✨ 智能分类'; btn.disabled = false; return; }
+    n++;
+    fill.style.width = (n/total*100) + '%';
+    txt.textContent = `已分析 ${n} / ${total} 个文件…`;
+    if(n >= total){
+      clearInterval(timer);
+      btn.textContent = '✨ 智能分类'; btn.disabled = false;
+      renderSuggestions();
+    }
+  }, 420);
+};
+function renderSuggestions(){
+  if(!$('#sugProgress') || !$('#sugBody')) return;
+  const ok = SEED.suggestions.filter(s => !s.low);
+  const low = SEED.suggestions.filter(s => s.low);
+  const card = s => `<div class="sug-card" data-sug="${esc(s.file)}">
+    <div><div class="sug-file">${esc(s.file)}</div><div class="sug-path">${esc(s.path)}</div></div>
+    <div class="sug-arrow">→</div>
+    <div><span class="sug-project">${esc(s.project)}</span><div class="sug-path" style="margin-top:4px">${esc(s.ppath)}</div></div>
+    <div style="display:flex;align-items:center;gap:8px"><div class="conf-track"><div class="conf-fill" style="width:${s.conf}%"></div></div><span class="conf-label">${s.conf}%</span></div>
+    <p class="sug-reason">${esc(s.reason)}</p>
+    <div style="display:flex;gap:8px"><button class="btn-confirm-sug" data-ok="${esc(s.file)}">确认归档</button><button class="btn-skip-sug" data-skip="${esc(s.file)}">忽略</button></div>
+  </div>`;
+  $('#sugProgress').innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap">
+    <span style="background:#e0e7ff;color:#3730a3;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600">${ok.length} 条可确认建议</span>
+    <span style="background:#fef9c3;color:#854d0e;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600">${low.length} 条低置信度</span>
+  </div>`;
+  $('#sugBody').innerHTML = `
+    <div class="sec-head" style="margin:12px 0 8px">建议归档</div>
+    <div style="display:flex;flex-direction:column;gap:10px">${ok.map(card).join('')}</div>
+    <div class="sec-head" style="margin:16px 0 8px">低置信度，需人工确认</div>
+    <div style="display:flex;flex-direction:column;gap:10px">${low.map(card).join('')}</div>`;
+  $('#sugBody').onclick = e => {
+    const okb = e.target.closest('[data-ok]');
+    if(okb){
+      const s = SEED.suggestions.find(x => x.file === okb.dataset.ok);
+      const p = SEED.projects.find(x => x.path === s.ppath);
+      if(p){ (S.assigned[p.id] = S.assigned[p.id] || []).push(s.file); S.justAdded[p.id] = s.file; }
+      S.files = S.files.filter(f => f.name !== s.file);
+      save(); renderScanPool(); renderOrganize(); renderKanban();
+      okb.closest('.sug-card').remove();
+      toast(`已归档「${s.file}」到「${s.project}」`);
+      return;
+    }
+    const sk = e.target.closest('[data-skip]');
+    if(sk){ sk.closest('.sug-card').remove(); toast('已忽略该建议'); }
+  };
+}
+
+/* ============ 模版管理抽屉 ============ */
+$('#btnTemplates').onclick = () => {
+  $('#drawerBackdrop').classList.add('open');
+  const tpl = [
+    {name:'周报汇总',type:'文本',def:true,preview:'# 本周周报\\n## 项目进展\\n## 遇到的问题\\n## 下周计划'},
+    {name:'项目健康巡检',type:'文本',def:false,preview:'列出所有停滞超过 14 天的项目，说明最后一次活动内容与建议动作。'},
+    {name:'月度复盘模版.docx',type:'Word',def:false,preview:'一、目标回顾\\n二、结果与差距\\n三、原因分析\\n四、下阶段动作'}
+  ];
+  const tag = {'文本':'#e0e7ff;#3730a3','Word':'#dbeafe;#1e40af','Excel':'#dcfce7;#166534'};
+  $('#drawerBox').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <h2>模版管理</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:8px;padding:7px 12px;font-size:13px" data-toast="演示模式不读取本地文件">📂 导入文件</button>
+        <button style="background:#2563eb;color:#fff;border-radius:8px;padding:7px 12px;font-size:13px" data-toast="演示模式下模版列表固定">＋ 新建</button>
+        <button class="drawer-close" id="drawerClose2">×</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${tpl.map(t => { const [bg,fg] = tag[t.type].split(';'); return `
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <strong style="font-size:14px">${esc(t.name)}</strong>
+          <span style="background:${bg};color:${fg};border-radius:5px;padding:1px 6px;font-size:11px;font-weight:700">${t.type}</span>
+          ${t.def?'<span style="background:#dcfce7;color:#166534;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700">默认</span>':''}
+        </div>
+        <pre style="margin:0;font-size:11px;color:#475569;white-space:pre-wrap;line-height:1.6">${esc(t.preview.replace(/\\\\n/g,'\n'))}</pre>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button style="background:#eff6ff;color:#1d4ed8;border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600" data-toast="已填入对话输入框">使用</button>
+          <button style="background:#f1f5f9;color:#475569;border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600" data-toast="演示模式不可编辑">编辑</button>
+          ${t.def?'':'<button style="background:#fef9c3;color:#854d0e;border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600" data-toast="已设为默认模版">设默认</button>'}
+          <button style="background:#fee2e2;color:#b91c1c;border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600" data-toast="演示模式不删除数据">删除</button>
+        </div>
+      </div>`; }).join('')}
+    </div>`;
+  $('#drawerClose2').onclick = closeDrawer;
+};
+/* ============ 看板 ============ */
+const H_LABEL = {active:'活跃',stalled:'停滞',needs_review:'待确认',completed:'已结束'};
+let kbExpanded = {}, kbSummary = {}, kbForm = {};
+function healthOf(p){ return S.completed[p.id] ? 'completed' : p.health; }
+function reasonOf(p){ return S.completed[p.id] ? '项目已结束' : p.reason; }
+function updateOf(p){ const ev = S.events[p.id]; return (ev && ev.length) ? ev[ev.length-1] : p.update; }
+
+function renderKanban(){
+  const all = SEED.projects.filter(p => p.status === 'active');
+  const stats = [
+    ['全部项目', all.length, '当前目标目录'],
+    ['活跃', all.filter(p=>healthOf(p)==='active').length, '近期有活动'],
+    ['停滞', all.filter(p=>healthOf(p)==='stalled').length, '需要推进'],
+    ['待确认', all.filter(p=>healthOf(p)==='needs_review'||S.followUp[p.id]).length, '含待跟进标记'],
+    ['今日活动', all.filter(p=>p.activity.startsWith('9月3日')).length, '今天有更新'],
+    ['已结束', all.filter(p=>healthOf(p)==='completed').length, '可在卡片恢复']
+  ];
+  $('#kbStats').innerHTML = stats.map(([l,v,h]) => `<div class="stat-tile"><span>${l}</span><strong>${v}</strong><small>${h}</small></div>`).join('');
+
+  const q = ($('#kbSearch').value || '').toLowerCase();
+  const hf = $('#kbHealthFilter').value;
+  const match = p => (!q || p.name.toLowerCase().includes(q) || p.path.toLowerCase().includes(q)) && (hf==='all' || healthOf(p)===hf);
+  const pool = all.filter(match);
+  const ids = new Set(pool.map(p=>p.id));
+  const roots = pool.filter(p => p.parent===null || !ids.has(p.parent));
+  $('#kbCount').textContent = pool.length + ' 个项目';
+  const node = p => {
+    const kids = pool.filter(x => x.parent === p.id);
+    const exp = kbExpanded[p.id] !== false;
+    const h = healthOf(p), files = projFiles(p), up = updateOf(p);
+    const people = p.collaborators.slice(0,3);
+    return `<div class="tree-node">
+      <div class="kb-card">
+        <div class="kb-main" data-open="${p.id}">
+          <div class="kb-title-row">
+            ${kids.length ? `<button class="expand-btn" data-exp="${p.id}" title="${exp?'收起子项目':'展开子项目'}">${exp?'▾':'▸'}</button>` : '<span class="expand-spacer"></span>'}
+            <strong>${esc(p.name)}</strong>
+            <span class="health-badge h-${h}">${H_LABEL[h]}</span>
+          </div>
+          <div class="kb-meta" style="font-size:12px">📁 ${esc(p.path)}</div>
+          <div class="kb-meta">
+            <span>负责人：${esc(p.owner||'未分配负责人')}</span>
+            <span>下一步：${esc(p.next||'暂无下一步')}</span>
+          </div>
+          <div class="people-row">
+            ${people.length ? people.map(c=>`<span class="person-chip">${esc(c)}</span>`).join('') + (p.collaborators.length>3?`<span class="person-chip">+${p.collaborators.length-3}</span>`:'') : '<span class="person-chip empty">暂无协作者</span>'}
+          </div>
+          <div class="kb-meta">
+            <span>${esc(reasonOf(p))}</span>
+            <span>最近活动：${esc(p.activity)}</span>
+            <span>${files.length} 个文件</span>
+            ${kids.length?`<span>${kids.length} 个直接子项目</span>`:''}
+          </div>
+          ${up ? `<div class="latest-update">最新动态：${esc(up)}</div>` : ''}
+        </div>
+        <div class="kb-actions">
+          <button data-kact="update" data-p="${p.id}">添加动态</button>
+          <button data-kact="follow" data-p="${p.id}" class="${S.followUp[p.id]?'follow-active':''}" ${S.followUp[p.id]?'disabled':''}>${S.followUp[p.id]?'已待跟进':'待跟进'}</button>
+          <button data-kact="summary" data-p="${p.id}">${kbSummary[p.id]?'收起摘要':'展开摘要'}</button>
+          ${h==='completed' ? `<button data-kact="restore" data-p="${p.id}">恢复</button>` : `<button class="danger-btn" data-kact="end" data-p="${p.id}">项目结束</button>`}
+          <button data-open="${p.id}">详情</button>
+        </div>
+        ${kbForm[p.id] ? `<div class="update-form"><input id="upIn${p.id}" placeholder="输入近期项目动态，如：进入谈判阶段"/><button data-kact="saveUpdate" data-p="${p.id}">保存</button></div>` : ''}
+        ${kbSummary[p.id] ? `<div class="summary-panel"><div class="summary-grid">
+          <div class="summary-cell"><span>健康说明</span><strong>${esc(reasonOf(p))}</strong></div>
+          <div class="summary-cell"><span>最新动态</span><strong>${esc(up||'暂无动态')}</strong></div>
+          <div class="summary-cell"><span>直接活动</span><strong>${esc(p.activity)}</strong></div>
+          <div class="summary-cell"><span>累计内容</span><strong>${files.length} 个文件 / ${childrenOf(p.id).length} 个子项目</strong></div>
+        </div></div>` : ''}
+      </div>
+      ${kids.length && exp ? `<div class="tree-children">${kids.map(node).join('')}</div>` : ''}
+    </div>`;
+  };
+  $('#kbTree').innerHTML = roots.length ? roots.map(node).join('') : `<div class="empty-dashed">暂无项目。请先在文件归档页创建或选择目标项目。</div>`;
+}
+$('#kbSearch').oninput = renderKanban;
+$('#kbHealthFilter').onchange = renderKanban;
+$('#kbTree').addEventListener('click', e => {
+  const exp = e.target.closest('[data-exp]');
+  if(exp){ e.stopPropagation(); const id = exp.dataset.exp; kbExpanded[id] = kbExpanded[id] === false; renderKanban(); return; }
+  const act = e.target.closest('[data-kact]');
+  if(act){
+    e.stopPropagation();
+    const id = act.dataset.p, p = SEED.projects.find(x => x.id == id), k = act.dataset.kact;
+    if(k === 'update'){ kbForm[id] = !kbForm[id]; renderKanban(); if(kbForm[id]) $('#upIn'+id).focus(); }
+    if(k === 'saveUpdate'){
+      const v = $('#upIn'+id).value.trim();
+      if(!v){ toast('请输入动态内容'); return; }
+      (S.events[id] = S.events[id] || []).push(v);
+      kbForm[id] = false; save(); renderKanban(); toast('动态已保存');
+    }
+    if(k === 'follow'){ S.followUp[id] = true; save(); renderKanban(); toast(`「${p.name}」已标记为待跟进`); }
+    if(k === 'summary'){ kbSummary[id] = !kbSummary[id]; renderKanban(); }
+    if(k === 'end'){
+      openModal('结束项目', `确认结束项目「${p.name}」？${childrenOf(p.id).length?'该项目有子项目，将一并结束。':''}`, '', '确认结束', () => {
+        S.completed[id] = true;
+        if(childrenOf(p.id).length) childrenOf(p.id).forEach(c => S.completed[c.id] = true);
+        save(); renderKanban(); toast(`「${p.name}」已结束`);
+      });
+    }
+    if(k === 'restore'){
+      openModal('恢复项目', `确认恢复项目「${p.name}」？${childrenOf(p.id).length?'是否同时恢复所有子项目？':''}`, '', '确认恢复', () => {
+        delete S.completed[id];
+        childrenOf(p.id).forEach(c => delete S.completed[c.id]);
+        save(); renderKanban(); toast(`「${p.name}」已恢复`);
+      });
+    }
+    return;
+  }
+  if(e.target.closest('[data-open]')) show('project');
+});
+
+/* ============ 文件详情：版本时间线 ============ */
+const V_LABEL = {created:'原始版本',modified:'内容修改',deleted:'文件删除',restored:'版本恢复'};
+function renderVersions(){
+  $('#fdTimeline').innerHTML = SEED.versions.map((v,i) => {
+    const first = v.n === 1;
+    const change = v.change || (first ? '首次归档，作为后续版本对比基线。' : '正在分析版本差异。');
+    const content = v.content || (first ? '原始版本不做 AI 差异分析，后续文件变化会自动生成并保存摘要。' : '正在分析版本内容。');
+    const impact = v.impact || (first ? '原始版本作为项目基线，不单独评估进度影响。' : '正在分析项目进度影响。');
+    return `<li class="version-item ${i===0?'hi':''}">
+      <div class="version-head">
+        <div class="version-head-left"><strong>v${v.n}</strong><span class="chip">${V_LABEL[v.type]}</span></div>
+        <time>${v.time}</time>
+      </div>
+      <div class="diff-block"><strong>本次变化点</strong><p>${esc(change)}</p></div>
+      <div class="diff-block"><strong>当前版本摘要</strong><p>${esc(content)}</p></div>
+      <div class="impact"><strong>项目影响</strong><p>${esc(impact)}</p></div>
+      <div class="version-actions"><button class="btn-outline" data-toast="已恢复到 v${v.n}（演示不改动文件）">恢复到此版本</button></div>
+    </li>`;
+  }).join('');
+}
+/* ============ 对话 ============ */
+function renderChat(){
+  $('#sessionList').innerHTML = SEED.sessions.map(s => `
+    <div class="session-item ${s.active?'active':''}" data-toast="演示模式下仅第一个会话有内容">
+      <div class="session-title">${esc(s.title)}</div>
+      <div class="session-meta">${s.date}</div>
+    </div>`).join('');
+  const box = $('#chatMessages');
+  box.innerHTML = SEED.chat.map(m => `
+    <div class="bubble ${m.role}">
+      <div class="bubble-content">${esc(m.text)}</div>
+      ${m.cites ? `<div class="citations"><span class="citations-label">📎 引用文件：</span>${m.cites.map(c=>`<span class="citation-tag" data-nav="file">${esc(c)}</span>`).join('')}</div>` : ''}
+    </div>`).join('');
+  box.scrollTop = box.scrollHeight;
+}
+const CANNED = {
+  q: '有哪些项目停滞了？需要我先处理哪个？',
+  a: '有两个项目已经停滞，另有两个待确认。\n\n优先处理「官网改版」——停滞 41 天，最久，且最新动态还停在「等设计资源排期」，说明它是被外部资源卡住的，不是没人做。这类项目要么推动排期，要么直接结束，留在看板上只会持续占注意力。\n\n其次是「新品上市/包装与供应链」，停滞 34 天。它的特殊性在于是子项目，且上级项目「新品上市」的下一步是「定价方案过会」——如果供应商报价没有更新，定价的成本基线就是过期的，过会大概率会被打回。所以这条线实际上比看起来更紧。\n\n「渠道增长/付费投放」12 天无活动且没有负责人，这个只需要指派一个人，成本最低。',
+  c: ['官网改版需求.md','供应商比价表.xlsx','新品定价测算.xlsx','上市节奏排期.xlsx']
+};
+let sent = false;
+function sendChat(){
+  const inp = $('#chatInput');
+  const text = inp.value.trim() || (sent ? '' : CANNED.q);
+  if(!text) { toast('演示模式下已有预设问答，直接点发送即可'); return; }
+  inp.value = ''; inp.disabled = true;
+  const btn = $('#btnSend'); btn.disabled = true; btn.textContent = '…';
+  const box = $('#chatMessages');
+  box.insertAdjacentHTML('beforeend', `<div class="bubble user"><div class="bubble-content">${esc(text)}</div></div>`);
+  const ab = document.createElement('div');
+  ab.className = 'bubble assistant';
+  ab.innerHTML = `<div class="bubble-content"><span class="typing">···</span></div>`;
+  box.appendChild(ab); box.scrollTop = box.scrollHeight;
+  const reply = sent ? '演示版本只内置了两组回答。真实使用时，AI 会读取你所有项目的文件版本、AI 总结与项目动态来回答，并在下方给出可点击的文件引用。' : CANNED.a;
+  const cites = sent ? [] : CANNED.c;
+  let i = 0;
+  const cc = ab.querySelector('.bubble-content');
+  const timer = setInterval(() => {
+    i += Math.max(2, Math.round(reply.length / 60));
+    cc.textContent = reply.slice(0, i);
+    box.scrollTop = box.scrollHeight;
+    if(i >= reply.length){
+      clearInterval(timer);
+      cc.textContent = reply;
+      if(cites.length){
+        ab.insertAdjacentHTML('beforeend', `<div class="citations"><span class="citations-label">📎 引用文件：</span>${cites.map(c=>`<span class="citation-tag" data-nav="file">${esc(c)}</span>`).join('')}</div>`);
+      }
+      inp.disabled = false; btn.disabled = false; btn.textContent = '发送';
+      box.scrollTop = box.scrollHeight;
+      sent = true;
+    }
+  }, 55);
+}
+$('#btnSend').onclick = sendChat;
+$('#chatInput').onkeydown = e => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); } };
+
+/* ============ 消息 ============ */
+const M_TYPE = {manual_suggestion:'修改建议',health_alert:'项目提醒'};
+let msgPanel = null;
+function renderMessages(){
+  const pending = SEED.messages.filter(m => m.tab==='pending' && !S.msgState[m.id]);
+  const snoozed = SEED.messages.filter(m => m.tab==='snoozed' && !S.msgState[m.id]);
+  $('#cntPending').textContent = pending.length;
+  $('#cntSnoozed').textContent = snoozed.length;
+  const unread = pending.filter(m => m.unread && !S.msgState[m.id]).length;
+  $('#navUnread').textContent = unread;
+  $('#navUnread').style.display = unread ? '' : 'none';
+
+  let list;
+  if(S.msgTab === 'pending') list = pending;
+  else if(S.msgTab === 'snoozed') list = snoozed;
+  else list = SEED.messages.filter(m => !S.msgState[m.id]);
+
+  if(!list.length){
+    const emptyMap = {
+      pending: ['暂无待处理消息','点击「刷新健康分析」检查项目状态'],
+      snoozed: ['暂无稍后提醒','设置了「稍后提醒」的消息会出现在这里'],
+      all: ['暂无消息','']
+    };
+    const [t,h] = emptyMap[S.msgTab];
+    $('#msgList').innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#94a3b8;padding:56px 20px">
+      <div style="font-size:48px">✅</div><div>${t}</div>${h?`<div style="font-size:12px">${h}</div>`:''}</div>`;
+    return;
+  }
+  $('#msgList').innerHTML = list.map(m => `
+    <div class="msg-card ${m.unread?'unread':''}">
+      <div class="msg-title-row">
+        ${m.unread?'<span class="dot"></span>':''}
+        <span class="type-tag">${M_TYPE[m.type]||m.type}</span>
+        <span class="msg-title">${esc(m.title)}</span>
+        ${m.health?`<span class="msg-health" style="background:${m.hc}18;color:${m.hc}">${m.health}</span>`:''}
+      </div>
+      <div class="project-tag">📁 ${esc(m.subject)}</div>
+      <div class="msg-body">${esc(m.body)}</div>
+      ${m.remind?`<div class="remind-tag">⏰ 提醒时间：${m.remind}</div>`:''}
+      <div class="msg-actions">
+        <button class="btn-done" data-mact="done" data-m="${m.id}">✅ 完成</button>
+        <button class="btn-add-event" data-mact="event" data-m="${m.id}">📝 添加状态</button>
+        <button class="btn-remind" data-mact="remind" data-m="${m.id}">⏰ 稍后提醒</button>
+        <button class="btn-dismiss" data-mact="dismiss" data-m="${m.id}">忽略</button>
+      </div>
+      ${msgPanel && msgPanel.id === m.id ? panelHTML(m) : ''}
+    </div>`).join('');
+}
+function panelHTML(m){
+  if(msgPanel.kind === 'event'){
+    return `<div class="inlinePanel" style="border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;padding:12px;display:flex;flex-direction:column;gap:8px">
+      <input id="mEvIn" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font-size:13px" placeholder="输入项目状态动态，如：已和负责人确认，下周恢复推进"/>
+      <div style="display:flex;gap:8px"><button style="background:#2563eb;color:#fff;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600" data-mact="evOk" data-m="${m.id}">确认</button>
+      <button style="background:#f1f5f9;color:#475569;border-radius:8px;padding:6px 10px;font-size:13px" data-mact="cancel" data-m="${m.id}">取消</button></div></div>`;
+  }
+  return `<div class="inlinePanel" style="border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;padding:12px;display:flex;flex-direction:column;gap:8px">
+    <span style="font-size:12px;color:#64748b;font-weight:600">选择提醒时间</span>
+    <input type="datetime-local" id="mRemIn" value="2026-09-06T09:00" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font-size:13px"/>
+    <div style="display:flex;gap:8px"><button style="background:#2563eb;color:#fff;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600" data-mact="remOk" data-m="${m.id}">设置提醒</button>
+    <button style="background:#f1f5f9;color:#475569;border-radius:8px;padding:6px 10px;font-size:13px" data-mact="cancel" data-m="${m.id}">取消</button></div></div>`;
+}
+$$('.msg-tab').forEach(b => b.onclick = () => {
+  S.msgTab = b.dataset.mtab; save(); msgPanel = null;
+  $$('.msg-tab').forEach(x => x.classList.toggle('active', x === b));
+  renderMessages();
+});
+$('#msgList').addEventListener('click', e => {
+  const b = e.target.closest('[data-mact]');
+  if(!b) return;
+  const id = +b.dataset.m, m = SEED.messages.find(x => x.id === id), k = b.dataset.mact;
+  if(k === 'done'){
+    openModal('归档项目', `确认将项目「${m.project}」直接归档？`, '', '确认归档', () => {
+      S.msgState[id] = 'done'; save(); msgPanel = null; renderMessages(); toast(`「${m.project}」已归档，消息已处理`);
+    });
+    return;
+  }
+  if(k === 'dismiss'){ S.msgState[id] = 'dismissed'; m.unread = false; save(); msgPanel = null; renderMessages(); toast('已忽略该消息'); return; }
+  if(k === 'event'){ m.unread = false; msgPanel = {id, kind:'event'}; renderMessages(); const i = $('#mEvIn'); if(i) i.focus(); return; }
+  if(k === 'remind'){ m.unread = false; msgPanel = {id, kind:'remind'}; renderMessages(); return; }
+  if(k === 'cancel'){ msgPanel = null; renderMessages(); return; }
+  if(k === 'evOk'){
+    const v = $('#mEvIn').value.trim();
+    if(!v){ toast('请输入状态内容'); return; }
+    const p = SEED.projects.find(x => x.path === m.project || x.name === m.project);
+    if(p) (S.events[p.id] = S.events[p.id] || []).push(v);
+    S.msgState[id] = 'done'; save(); msgPanel = null; renderMessages(); renderKanban(); toast('已写入项目动态');
+    return;
+  }
+  if(k === 'remOk'){
+    const v = $('#mRemIn').value;
+    if(!v){ toast('请选择提醒时间'); return; }
+    const d = new Date(v);
+    if(d <= new Date()){ toast('请选择未来的时间'); return; }
+    m.remind = d.toLocaleString('zh-CN'); m.tab = 'snoozed';
+    save(); msgPanel = null; renderMessages();
+    toast(`已设为 ${d.toLocaleString('zh-CN',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})} 提醒，可在「稍后提醒」查看`);
+  }
+});
+$('#btnAnalyze').onclick = function(){
+  this.textContent = '分析中…'; this.disabled = true;
+  setTimeout(() => {
+    this.textContent = '🔄 刷新健康分析'; this.disabled = false;
+    $('#analyzeText').textContent = '已生成 3 条健康提醒';
+    $('#analyzeResult').style.display = 'flex';
+    renderMessages();
+  }, 1100);
+};
+/* ============ 报告 ============ */
+$('#btnGenReport').onclick = function(){
+  this.textContent = '生成中…'; this.disabled = true;
+  setTimeout(() => {
+    this.textContent = '生成报告'; this.disabled = false;
+    $('#reportPreview').textContent = REPORT;
+    $('#reportMeta').textContent = '周报（默认）· 2026-08-28 ~ 2026-09-03';
+    $('#reportResult').style.display = '';
+    S.reportDone = true; save();
+    $('#reportResult').scrollIntoView({behavior:'smooth', block:'nearest'});
+  }, 1200);
+};
+$('#btnPushFeishu').onclick = function(){
+  this.textContent = '推送中…'; this.disabled = true;
+  setTimeout(() => {
+    this.textContent = '⬆ 推送到飞书'; this.disabled = false;
+    $('#pushOk').style.display = 'flex';
+    S.pushed = true; save();
+    toast('已覆盖更新飞书云文档「项目进展报告」');
+  }, 1300);
+};
+
+/* ============ 设置 ============ */
+$$('.set-tab').forEach(b => b.onclick = () => {
+  $$('.set-tab').forEach(x => x.classList.toggle('active', x === b));
+  $$('[data-spanel]').forEach(p => p.style.display = p.dataset.spanel === b.dataset.stab ? '' : 'none');
+});
+$('#btnTestAI').onclick = function(){
+  this.textContent = '测试中…'; this.disabled = true;
+  setTimeout(() => { this.textContent = '测试连接'; this.disabled = false; $('#aiTestOk').style.display = ''; }, 900);
+};
+$('#btnTestFeishu').onclick = function(){
+  this.textContent = '测试中…'; this.disabled = true;
+  setTimeout(() => { this.textContent = '测试连接'; this.disabled = false; $('#feishuTestOk').style.display = ''; }, 900);
+};
+/* ============ 功能导览 ============ */
+const scenes = [
+  {screen:'workspace', target:'#scanPanel', caption:'第 1 站 · 扫描池：定时扫描你的来源文件夹，比对出新增 / 修改 / 删除的文件，全部堆在这里等你处理。'},
+  {screen:'workspace', target:'.organize-panel', caption:'第 2 站 · 整理区：把左边的文件拖到右边任意项目上就完成归档。同名文件会自动变成 _v1 / _v2，不覆盖旧内容。'},
+  {screen:'workspace', target:'#btnSuggest', caption:'第 3 站 · 智能分类：AI 逐个判断该进哪个项目，流式返回建议，你只需逐条确认。'},
+  {screen:'kanban', target:'#kbStats', caption:'第 4 站 · 项目看板：每个项目的健康度是自动算出来的 —— 活跃 / 待确认 / 停滞 / 已结束，阈值可以在设置里调。'},
+  {screen:'kanban', target:'#kbTree', caption:'第 5 站 · 项目树：多级项目一目了然。停滞的项目会写清「41 天未活动」，可以直接补动态、标记待跟进，或结束整条线（含子项目）。'},
+  {screen:'file', target:'#fdTimeline', caption:'第 6 站 · 版本时间线：每次变更都留痕，并附三段 AI 总结 —— 本次变化点 / 当前版本摘要 / 项目影响。这就是所谓的「项目记忆」。'},
+  {screen:'chat', target:'#chatMessages', caption:'第 7 站 · AI 对话：基于你所有项目的文件与动态问答，回答会附上引用的文件，可点击溯源。'},
+  {screen:'messages', target:'#msgList', caption:'第 8 站 · 消息中心：长期没动静的项目会主动来找你，可以一键转成项目动态、稍后提醒，或者直接结束项目。'},
+  {screen:'reports', target:'#btnGenReport', caption:'第 9 站 · 报告：选好时间范围就能生成 Markdown 周报 / 日报，可导出，也可以一键覆盖写入飞书云文档。'},
+  {screen:'project', target:'.share-link', caption:'第 10 站 · 对外分享：生成带 token 的公开链接给别人看，或者导出带快照的 Markdown 离线传阅。数据始终在你自己的机器上。'},
+  {screen:'settings', target:'.set-tabs', caption:'最后 · 设置：文件夹、AI Provider、健康度阈值、飞书推送都在这里。'}
+];
+let tourIdx = 0, tourTimer = null;
+function clearHi(){ $$('.highlight').forEach(el => el.classList.remove('highlight')); }
+function playScene(i){
+  clearHi();
+  tourIdx = (i + scenes.length) % scenes.length;
+  const s = scenes[tourIdx];
+  show(s.screen);
+  $('#tourCaption').textContent = s.caption;
+  $('#tourStep').textContent = (tourIdx + 1) + ' / ' + scenes.length;
+  setTimeout(() => {
+    const el = document.querySelector(s.target);
+    if(el){ el.classList.add('highlight'); el.scrollIntoView({behavior:'smooth', block:'center'}); }
+  }, 180);
+}
+function stopAuto(){ if(tourTimer){ clearInterval(tourTimer); tourTimer = null; $('#tourAuto').textContent = '自动播放'; } }
+function openTour(){ $('#tourBar').classList.remove('hidden'); $('#tourOpen').classList.add('hidden'); playScene(tourIdx); }
+function closeTour(){ stopAuto(); clearHi(); $('#tourBar').classList.add('hidden'); $('#tourOpen').classList.remove('hidden'); }
+$('#tourNext').onclick = () => { stopAuto(); playScene(tourIdx + 1); };
+$('#tourPrev').onclick = () => { stopAuto(); playScene(tourIdx - 1); };
+$('#tourClose').onclick = closeTour;
+$('#tourOpen').onclick = openTour;
+$('#tourOpenTop').onclick = () => { tourIdx = 0; openTour(); };
+$('#tourAuto').onclick = function(){
+  if(tourTimer){ stopAuto(); return; }
+  this.textContent = '暂停';
+  tourTimer = setInterval(() => {
+    if(tourIdx >= scenes.length - 1){ stopAuto(); return; }
+    playScene(tourIdx + 1);
+  }, 5200);
+};
+document.addEventListener('keydown', e => {
+  if($('#tourBar').classList.contains('hidden')) return;
+  if(e.key === 'ArrowRight'){ stopAuto(); playScene(tourIdx + 1); }
+  if(e.key === 'ArrowLeft'){ stopAuto(); playScene(tourIdx - 1); }
+  if(e.key === 'Escape') closeTour();
+});
+/* ============ 重置演示 ============ */
+$('#resetDemo').onclick = () => {
+  openModal('重置演示数据', '会清空你在这个演示里做过的所有操作（归档、动态、消息处理等），恢复到初始状态。', '', '确认重置', () => {
+    try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+    location.reload();
+  });
+};
+
+/* ============ 初始化 ============ */
+$('#fileSearch').value = S.search || '';
+$('#showArchived').checked = !!S.showArchived;
+$$('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view === S.view));
+$$('.msg-tab').forEach(b => b.classList.toggle('active', b.dataset.mtab === S.msgTab));
+if(S.reportDone){
+  $('#reportPreview').textContent = REPORT;
+  $('#reportMeta').textContent = '周报（默认）· 2026-08-28 ~ 2026-09-03';
+  $('#reportResult').style.display = '';
+  if(S.pushed) $('#pushOk').style.display = 'flex';
+}
+renderScanPool();
+renderOrganize();
+renderKanban();
+renderVersions();
+renderChat();
+renderMessages();
+show('workspace');
+setTimeout(() => {
+  let toured = null;
+  try{ toured = localStorage.getItem(STORE_KEY + '-toured'); }catch(e){}
+  if(!toured){ try{ localStorage.setItem(STORE_KEY + '-toured','1'); }catch(e){} openTour(); }
+}, 700);
+</script>
+
+</body>
+</html>

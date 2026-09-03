@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useProject, useProjectAssignments, useProjectEvents, useAddProjectEvent, useCompleteProject, useRestoreProject } from '@/hooks/useProjects'
+import { exportProjectMarkdown } from '@/api/projects'
 import { useProjectShare, useUpdateProjectShare, useResetProjectShareToken } from '@/hooks/useShare'
 import type { KanbanStatus, ProjectHealthStatus } from '@/types'
 import styles from './ProjectDetailPage.module.css'
@@ -46,6 +47,7 @@ export default function ProjectDetailPage() {
   const [shareEnabled, setShareEnabled] = useState(false)
   const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<number[]>([])
   const [shareSaved, setShareSaved] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
     if (shareConfig) {
@@ -88,6 +90,27 @@ export default function ProjectDetailPage() {
   const handleResetToken = async () => {
     if (!confirm('重置后当前分享链接将立即失效，对方需要使用新链接。确认重置？')) return
     await resetToken.mutateAsync(projectId)
+  }
+
+  const handleExportMarkdown = async () => {
+    if (isExporting) return
+    setIsExporting(true)
+    try {
+      const md = await exportProjectMarkdown(projectId)
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `项目-${project.name}.md`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert(`导出失败：${(err as Error).message}`)
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   const handleToggleAssignment = (assignmentId: number) => {
@@ -201,6 +224,24 @@ export default function ProjectDetailPage() {
         )}
       </div>
 
+      {/* 导出项目（可携带快照） */}
+      <div className={styles.section}>
+        <h2>导出项目（可携带快照）</h2>
+        <p className={styles.shareNotice}>
+          将本项目元信息、时间线与各文件的最新 AI 三维度总结，导出为一个 Markdown 文档。可自由发给任何人，对方无需访问你的本机服务。
+        </p>
+        <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            className={styles.statusBtn}
+            style={{ background: '#6d5efc', color: 'white' }}
+            onClick={handleExportMarkdown}
+            disabled={isExporting}
+          >
+            {isExporting ? '导出中…' : '⬇ 导出 Markdown 文档'}
+          </button>
+        </div>
+      </div>
+
       {/* 公开分享 */}
       <div className={styles.section}>
         <h2>公开分享</h2>
@@ -262,7 +303,7 @@ export default function ProjectDetailPage() {
         )}
 
         <p className={styles.shareNotice}>
-          ⚠️ 分享链接可供任何持有者访问，仅开放项目基本进展和已勾选文件的预览。公网访问需要本机服务保持运行，并通过 Cloudflare Tunnel 等工具暴露到公网。
+          ⚠️ 分享链接可供任何持有者访问，仅开放项目基本进展和已勾选文件的预览。公网访问需要本机服务保持运行，并通过 Cloudflare Tunnel 等工具暴露到公网。若不想暴露本机服务，可使用上方的「导出 Markdown 文档」生成可携带快照，离线分享。
         </p>
       </div>
     </div>

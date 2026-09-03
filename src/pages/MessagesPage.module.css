@@ -48,31 +48,67 @@
   padding: 0 4px;
 }
 
-.summary {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
+.fetching { font-size: 12px; color: #94a3b8; margin-left: auto; }
 
-.badge {
-  background: #e0e7ff;
-  color: #3730a3;
-  border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 12px;
+.toast {
+  align-self: flex-start;
+  background: #0f172a;
+  color: #f8fafc;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
   font-weight: 600;
 }
 
-.badgeUnread {
-  background: #fee2e2;
-  color: #b91c1c;
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tab + .tab { margin-left: 14px; }
+
+.tabActive {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+.tabCount {
+  background: #f1f5f9;
+  color: #475569;
   border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 12px;
+  padding: 1px 7px;
+  font-size: 11px;
   font-weight: 700;
 }
 
-.fetching { font-size: 12px; color: #94a3b8; }
+.tabActive .tabCount {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.typeTag {
+  background: #eef2ff;
+  color: #4338ca;
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 
 .empty {
   flex: 1;

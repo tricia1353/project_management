@@ -4,6 +4,7 @@ import styles from './SuggestionDrawer.module.css'
 interface SuggestionDrawerProps {
   open: boolean
   suggestions: AssignmentSuggestion[]
+  lowConfidenceSuggestions: AssignmentSuggestion[]
   skippedCount: number
   totalCount: number
   isSuggesting: boolean
@@ -15,9 +16,66 @@ interface SuggestionDrawerProps {
   onRefresh: () => void
 }
 
+function SuggestionCard({
+  suggestion,
+  assigningFileId,
+  onAccept,
+  onDismiss,
+}: {
+  suggestion: AssignmentSuggestion
+  assigningFileId: number | null
+  onAccept: (suggestion: AssignmentSuggestion) => void
+  onDismiss: (fileId: number) => void
+}) {
+  const isAssigning = assigningFileId === suggestion.file_id
+
+  return (
+    <div className={styles.card}>
+      <div className={styles.fileInfo}>
+        <div className={styles.fileName}>{suggestion.filename}</div>
+        <div className={styles.filePath}>{suggestion.relative_path}</div>
+      </div>
+      <div className={styles.arrow}>→</div>
+      <div className={styles.projectInfo}>
+        <div className={styles.projectName}>{suggestion.project_name}</div>
+        <div className={styles.filePath}>{suggestion.project_path}</div>
+      </div>
+      <div className={styles.confidenceRow}>
+        <div className={styles.confidenceBar}>
+          <div
+            className={styles.confidenceBarFill}
+            style={{ width: `${Math.round(suggestion.confidence)}%` }}
+          />
+        </div>
+        <span className={styles.confidence}>{Math.round(suggestion.confidence)}%</span>
+      </div>
+      <p className={styles.reason}>{suggestion.reason}</p>
+      <div className={styles.actions}>
+        <button
+          type="button"
+          className={styles.acceptButton}
+          onClick={() => onAccept(suggestion)}
+          disabled={isAssigning}
+        >
+          {isAssigning ? '归档中…' : '确认归档'}
+        </button>
+        <button
+          type="button"
+          className={styles.dismissButton}
+          onClick={() => onDismiss(suggestion.file_id)}
+          disabled={isAssigning}
+        >
+          忽略
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function SuggestionDrawer({
   open,
   suggestions,
+  lowConfidenceSuggestions,
   skippedCount,
   totalCount,
   isSuggesting,
@@ -30,7 +88,8 @@ export function SuggestionDrawer({
 }: SuggestionDrawerProps) {
   if (!open) return null
 
-  const analyzedCount = suggestions.length + skippedCount
+  const suggestionCount = suggestions.length + lowConfidenceSuggestions.length
+  const analyzedCount = suggestionCount + skippedCount
   const progressPct = totalCount > 0 ? Math.round((analyzedCount / totalCount) * 100) : 0
 
   return (
@@ -58,68 +117,53 @@ export function SuggestionDrawer({
         {!isSuggesting && (
           <div className={styles.summary}>
             <span>{suggestions.length} 条可确认建议</span>
+            {lowConfidenceSuggestions.length > 0 && (
+              <span className={styles.skippedBadge}>{lowConfidenceSuggestions.length} 条低置信度</span>
+            )}
             {skippedCount > 0 && (
-              <span className={styles.skippedBadge}>{skippedCount} 个置信度不足</span>
+              <span className={styles.skippedBadge}>{skippedCount} 个无法生成建议</span>
             )}
           </div>
         )}
 
         {error && <div className={styles.error}>{error}</div>}
 
-        <button
-          className={styles.refreshButton}
-          onClick={onRefresh}
-          disabled={isSuggesting}
-          type="button"
-        >
-          {isSuggesting ? '分析中…' : '重新分析'}
-        </button>
-
         <div className={styles.list}>
-          {isSuggesting && suggestions.length === 0 ? (
-            <div className={styles.empty}>正在逐一分析文件，结果将陆续出现…</div>
-          ) : suggestions.length === 0 && !isSuggesting ? (
-            <div className={styles.empty}>暂无高置信度分类建议。</div>
-          ) : (
-            suggestions.map(suggestion => (
-              <div key={suggestion.file_id} className={styles.card}>
-                <div className={styles.fileName}>{suggestion.filename}</div>
-                <div className={styles.filePath}>{suggestion.relative_path}</div>
+          {suggestions.length > 0 && (
+            <section className={styles.section}>
+              <div className={styles.sectionHeader}>建议归档</div>
+              {suggestions.map(suggestion => (
+                <SuggestionCard
+                  key={suggestion.file_id}
+                  suggestion={suggestion}
+                  assigningFileId={assigningFileId}
+                  onAccept={onAccept}
+                  onDismiss={onDismiss}
+                />
+              ))}
+            </section>
+          )}
 
-                <div className={styles.arrow}>推荐归档到</div>
+          {lowConfidenceSuggestions.length > 0 && (
+            <section className={styles.section}>
+              <div className={styles.sectionHeader}>低置信度，需人工确认</div>
+              {lowConfidenceSuggestions.map(suggestion => (
+                <SuggestionCard
+                  key={suggestion.file_id}
+                  suggestion={suggestion}
+                  assigningFileId={assigningFileId}
+                  onAccept={onAccept}
+                  onDismiss={onDismiss}
+                />
+              ))}
+            </section>
+          )}
 
-                <div className={styles.projectName}>{suggestion.project_path}</div>
-                <div className={styles.confidenceRow}>
-                  <span className={styles.confidence}>置信度 {suggestion.confidence}%</span>
-                  <span className={styles.confidenceBar}>
-                    <span
-                      className={styles.confidenceBarFill}
-                      style={{ width: `${suggestion.confidence}%` }}
-                    />
-                  </span>
-                </div>
-                <div className={styles.reason}>{suggestion.reason}</div>
-
-                <div className={styles.actions}>
-                  <button
-                    className={styles.acceptButton}
-                    onClick={() => onAccept(suggestion)}
-                    disabled={assigningFileId === suggestion.file_id}
-                    type="button"
-                  >
-                    {assigningFileId === suggestion.file_id ? '归档中…' : '✅ 确认归档'}
-                  </button>
-                  <button
-                    className={styles.dismissButton}
-                    onClick={() => onDismiss(suggestion.file_id)}
-                    disabled={assigningFileId === suggestion.file_id}
-                    type="button"
-                  >
-                    忽略
-                  </button>
-                </div>
-              </div>
-            ))
+          {!isSuggesting && suggestionCount === 0 && !error && (
+            <div className={styles.empty}>
+              <p>暂无可用建议。</p>
+              <button type="button" onClick={onRefresh}>重新分析</button>
+            </div>
           )}
         </div>
       </aside>

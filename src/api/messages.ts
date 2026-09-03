@@ -15,13 +15,18 @@ export interface AppMessage {
   updated_at: string
 }
 
-export async function getMessages(params?: { status?: 'active' | 'unread' | 'all' }): Promise<AppMessage[]> {
+export async function getMessages(params?: { status?: 'active' | 'unread' | 'snoozed' | 'all' }): Promise<AppMessage[]> {
   const { data } = await api.get<AppMessage[]>('/messages', { params })
   return data
 }
 
 export async function getUnreadMessageCount(): Promise<{ count: number }> {
   const { data } = await api.get<{ count: number }>('/messages/unread-count')
+  return data
+}
+
+export async function getSnoozedMessageCount(): Promise<{ count: number }> {
+  const { data } = await api.get<{ count: number }>('/messages/snoozed-count')
   return data
 }
 

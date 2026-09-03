@@ -25,8 +25,11 @@ export const messageRoutes: FastifyPluginAsync = async fastify => {
       whereClause = "WHERE m.status != 'dismissed'"
     } else if (statusFilter === 'unread') {
       whereClause = "WHERE m.status = 'unread'"
+    } else if (statusFilter === 'snoozed') {
+      // 稍后提醒中：已设置提醒时间，且提醒时间尚未到
+      whereClause = `WHERE m.status = 'read' AND m.remind_at IS NOT NULL AND m.remind_at > datetime('now')`
     } else {
-      // 'active' = unread + reminders that are due
+      // 'active' = 待处理：未读 + 到期的稍后提醒
       whereClause = `WHERE (
         m.status = 'unread'
         OR (m.status = 'read' AND m.remind_at IS NOT NULL AND m.remind_at <= datetime('now'))
@@ -34,7 +37,7 @@ export const messageRoutes: FastifyPluginAsync = async fastify => {
     }
 
     return db.prepare(`
-      SELECT m.*, p.name AS project_name, p.path AS project_path, p.health_status
+      SELECT m.*, p.name AS project_name, p.path AS project_path
       FROM messages m
       LEFT JOIN (
         SELECT id, name, path, status,
@@ -48,10 +51,19 @@ export const messageRoutes: FastifyPluginAsync = async fastify => {
   })
 
   fastify.get('/messages/unread-count', async () => {
+    // 待处理数量：未读 + 到期的稍后提醒。侧边栏红点只反映"现在需要处理"的消息。
     const row = db.prepare(`
       SELECT COUNT(*) AS cnt FROM messages
       WHERE status = 'unread'
          OR (status = 'read' AND remind_at IS NOT NULL AND remind_at <= datetime('now'))
+    `).get() as { cnt: number }
+    return { count: row.cnt }
+  })
+
+  fastify.get('/messages/snoozed-count', async () => {
+    const row = db.prepare(`
+      SELECT COUNT(*) AS cnt FROM messages
+      WHERE status = 'read' AND remind_at IS NOT NULL AND remind_at > datetime('now')
     `).get() as { cnt: number }
     return { count: row.cnt }
   })

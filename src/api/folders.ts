@@ -6,6 +6,24 @@ export async function getFolders(params?: { folder_type?: FolderType }) {
   return data
 }
 
+export interface ScanRecord {
+  id: number
+  folder_id: number
+  started_at: string
+  completed_at: string | null
+  files_added: number
+  files_modified: number
+  files_deleted: number
+  status: 'running' | 'completed' | 'failed'
+  error_message: string | null
+  pending_count?: number
+}
+
+export async function getScans(folderId: number, limit = 20) {
+  const { data } = await api.get<ScanRecord[]>('/scans', { params: { folderId, limit } })
+  return data
+}
+
 export async function createFolder(input: {
   absolute_path: string
   scan_interval_seconds: number

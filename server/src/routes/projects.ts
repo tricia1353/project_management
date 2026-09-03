@@ -123,10 +123,17 @@ export const projectRoutes: FastifyPluginAsync = async fastify => {
     return db.prepare('SELECT * FROM projects WHERE id = ?').get(result.lastInsertRowid)
   })
 
-  // PATCH /api/projects/:id  { name?, status? }
+  // PATCH /api/projects/:id  { name?, status?, kanban_status?, owner_name?, collaborators?, next_step? }
   fastify.patch('/projects/:id', async request => {
     const { id } = request.params as { id: string }
-    const body = request.body as { name?: string; status?: 'active' | 'archived'; kanban_status?: string }
+    const body = request.body as {
+      name?: string
+      status?: 'active' | 'archived'
+      kanban_status?: string
+      owner_name?: string | null
+      collaborators?: string[]
+      next_step?: string | null
+    }
     const project = db
       .prepare(`
         SELECT p.*, f.absolute_path AS folder_path
@@ -163,7 +170,29 @@ export const projectRoutes: FastifyPluginAsync = async fastify => {
       db.prepare(`UPDATE projects SET kanban_status = ?, updated_at = datetime('now') WHERE id = ?`).run(body.kanban_status, id)
     }
 
-    return db.prepare('SELECT * FROM projects WHERE id = ?').get(id)
+    if (body.owner_name !== undefined) {
+      const ownerName = typeof body.owner_name === 'string' ? body.owner_name.trim() : null
+      db.prepare(`UPDATE projects SET owner_name = ?, updated_at = datetime('now') WHERE id = ?`).run(ownerName || null, id)
+    }
+
+    if (body.collaborators !== undefined) {
+      if (!Array.isArray(body.collaborators)) throw fastify.httpErrors.badRequest('collaborators 必须是字符串数组')
+      const collaborators = body.collaborators
+        .filter((item): item is string => typeof item === 'string')
+        .map(item => item.trim())
+        .filter(Boolean)
+      db.prepare(`UPDATE projects SET collaborators_json = ?, updated_at = datetime('now') WHERE id = ?`).run(
+        collaborators.length ? JSON.stringify(collaborators) : null,
+        id
+      )
+    }
+
+    if (body.next_step !== undefined) {
+      const nextStep = typeof body.next_step === 'string' ? body.next_step.trim() : null
+      db.prepare(`UPDATE projects SET next_step = ?, updated_at = datetime('now') WHERE id = ?`).run(nextStep || null, id)
+    }
+
+    return getProjectActivityById(Number(id))
   })
 
   // DELETE /api/projects/:id — 仅删库，不删磁盘
@@ -228,6 +257,12 @@ export const projectRoutes: FastifyPluginAsync = async fastify => {
     const result = db
       .prepare('INSERT INTO file_assignments (source_file_id, project_id, dest_filename) VALUES (?, ?, ?)')
       .run(body.fileId, Number(id), destFilename)
+
+    // 复制成功后标记源文件已归档，避免重复出现在扫描池和智能分类候选中
+    db.prepare(`
+      UPDATE files SET processing_status = 'archived', ignored_at = NULL, updated_at = datetime('now')
+      WHERE id = ?
+    `).run(body.fileId)
 
     db.prepare(`UPDATE projects SET updated_at = datetime('now') WHERE id = ?`).run(id)
 
@@ -347,6 +382,116 @@ export const projectRoutes: FastifyPluginAsync = async fastify => {
       .run(Number(id), body.body.trim())
 
     return db.prepare('SELECT * FROM project_events WHERE id = ?').get(result.lastInsertRowid)
+  })
+
+  // GET /api/projects/:id/export.md — 导出可携带的 Markdown 快照
+  fastify.get('/projects/:id/export.md', async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const project = getProjectActivityById(Number(id))
+    if (!project) throw fastify.httpErrors.notFound('Project not found')
+
+    const HEALTH_LABELS: Record<string, string> = {
+      active: '活跃',
+      stalled: '停滞',
+      needs_review: '待确认',
+      completed: '已结束',
+    }
+
+    const files = db
+      .prepare(`
+        SELECT fa.dest_filename,
+               f.relative_path AS source_relative_path,
+               f.version_count,
+               f.last_event_type,
+               latest.ai_content_summary,
+               latest.ai_change_summary,
+               latest.ai_progress_impact,
+               latest.version_number AS latest_version,
+               latest.created_at AS latest_version_at
+        FROM file_assignments fa
+        JOIN files f ON f.id = fa.source_file_id
+        LEFT JOIN versions latest ON latest.id = (
+          SELECT id FROM versions WHERE file_id = f.id ORDER BY version_number DESC LIMIT 1
+        )
+        WHERE fa.project_id = ?
+        ORDER BY fa.copied_at DESC
+      `)
+      .all(Number(id)) as Array<{
+        dest_filename: string
+        source_relative_path: string | null
+        version_count: number
+        last_event_type: string | null
+        ai_content_summary: string | null
+        ai_change_summary: string | null
+        ai_progress_impact: string | null
+        latest_version: number | null
+        latest_version_at: string | null
+      }>
+
+    const events = db
+      .prepare(`SELECT * FROM project_events WHERE project_id = ? ORDER BY created_at DESC LIMIT 50`)
+      .all(Number(id)) as ProjectEvent[]
+
+    const now = new Date().toLocaleString('zh-CN')
+    const health = project.health_status ?? 'needs_review'
+    const healthLabel = HEALTH_LABELS[health] ?? health
+    const name = project.name
+    const fullPath = project.folder_path ? `${project.folder_path}/${project.path}` : project.path
+
+    const lines: string[] = []
+    lines.push(`# 项目导出：${name}`)
+    lines.push('')
+    lines.push(`> 由「本地项目记忆体」自动生成 · 导出时间：${now}`)
+    lines.push('')
+    lines.push(`**路径**：${fullPath}`)
+    lines.push(`**健康度**：${healthLabel}${project.health_reason ? `（${project.health_reason}）` : ''}`)
+    lines.push(`**最近活动**：${project.latest_activity_at ?? '暂无'}`)
+    lines.push(`**归档文件数**：${project.assignment_count ?? files.length}`)
+    lines.push(`**创建时间**：${new Date(project.created_at).toLocaleString('zh-CN')}`)
+    lines.push('')
+    lines.push('---')
+    lines.push('')
+    lines.push('## 项目时间线')
+    lines.push('')
+    if (events.length === 0) {
+      lines.push('_暂无动态记录。_')
+    } else {
+      for (const ev of events) {
+        const when = new Date(ev.created_at.replace(' ', 'T')).toLocaleString('zh-CN')
+        const body = (ev.body ?? ev.event_type).replace(/\n+/g, ' ')
+        lines.push(`- **[${when}]** ${body}`)
+      }
+    }
+    lines.push('')
+    lines.push('---')
+    lines.push('')
+    lines.push('## 归档文件与 AI 记忆')
+    lines.push('')
+    if (files.length === 0) {
+      lines.push('_暂无归档文件。_')
+    } else {
+      for (const f of files) {
+        lines.push(`### ${f.dest_filename}`)
+        if (f.source_relative_path) lines.push(`- 来源：${f.source_relative_path}`)
+        const v = f.latest_version ?? f.version_count
+        const evType = f.last_event_type ?? 'created'
+        const vAt = f.latest_version_at ? new Date(f.latest_version_at.replace(' ', 'T')).toLocaleString('zh-CN') : ''
+        lines.push(`- 版本：v${v}（${evType}${vAt ? `，${vAt}` : ''}）`)
+        lines.push(`- **AI 内容总结**：${f.ai_content_summary || '暂无'}`)
+        lines.push(`- **AI 变更总结**：${f.ai_change_summary || '暂无'}`)
+        lines.push(`- **进度影响**：${f.ai_progress_impact || '暂无'}`)
+        lines.push('')
+      }
+    }
+    lines.push('---')
+    lines.push('')
+    lines.push('_本文件由本地项目看板自动生成，包含项目元信息、时间线与各文件的最新 AI 三维度总结，可自由分享。所有数据均来自你本机，未上传任何云端。_')
+
+    const markdown = lines.join('\n')
+    return reply
+      .type('text/markdown; charset=utf-8')
+      .header('Content-Disposition', `attachment; filename="project-${encodeURIComponent(name)}.md"`)
+      .send(markdown)
   })
 
   // POST /api/projects/:id/complete

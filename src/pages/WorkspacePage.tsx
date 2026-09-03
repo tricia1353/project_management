@@ -5,8 +5,8 @@ import {
   PointerSensor, useSensor, useSensors,
   useDraggable, useDroppable,
 } from '@dnd-kit/core'
-import { useFolders, useScanFolder } from '@/hooks/useFolders'
-import { useFiles } from '@/hooks/useFiles'
+import { useFolders, useScanFolder, useScans } from '@/hooks/useFolders'
+import { useFiles, useIgnoreFile, useRestoreFile } from '@/hooks/useFiles'
 import {
   useProjects, useCreateProject, useDeleteProject, useAssignFile,
   useFinalizeProject, useArchiveProject, useUnarchiveProject,
@@ -49,10 +49,15 @@ function buildProjectTree(projects: Project[]): ProjectTreeNode[] {
 
 // ─── 左侧：可拖拽文件卡 ──────────────────────────────────────────────────
 
-function DraggableFileCard({ file }: { file: ProjectFile }) {
+function DraggableFileCard({ file, onIgnore, onRestore }: {
+  file: ProjectFile
+  onIgnore?: (fileId: number) => void
+  onRestore?: (fileId: number) => void
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `file-${file.id}`,
     data: { fileId: file.id },
+    disabled: file.processing_status === 'ignored',
   })
   const style: CSSProperties = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
@@ -66,6 +71,30 @@ function DraggableFileCard({ file }: { file: ProjectFile }) {
         <span>{file.extension || '无扩展名'}</span>
         <span>{file.relative_path.split('/').slice(0, -1).join('/') || '根目录'}</span>
       </div>
+      {(onIgnore || onRestore) && (
+        <div className={styles.fileCardActions}>
+          {onIgnore && (
+            <button
+              type="button"
+              className={styles.btnIgnore}
+              onPointerDown={e => e.stopPropagation()}
+              onClick={e => { e.stopPropagation(); onIgnore(file.id) }}
+            >
+              忽略
+            </button>
+          )}
+          {onRestore && (
+            <button
+              type="button"
+              className={styles.btnRestore}
+              onPointerDown={e => e.stopPropagation()}
+              onClick={e => { e.stopPropagation(); onRestore(file.id) }}
+            >
+              ↩ 恢复
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -84,40 +113,147 @@ function DragFilePreview({ file }: { file: ProjectFile }) {
   )
 }
 
-// ─── 左侧面板 ────────────────────────────────────────────────────────────
+// ─── 左侧面板：单个来源文件夹的批次选择 ────────────────────────────────────
 
-function ScanPoolPanel({ activeFolderIds }: { activeFolderIds: number[] }) {
-  const { data: sourceFolders = [] } = useFolders()
-  const [search, setSearch] = useState('')
-  const [extFilter, setExtFilter] = useState('')
-  const scan = useScanFolder()
+function SourceFolderGroup({
+  folder,
+  search,
+  extFilter,
+  viewMode,
+  scan,
+  onIgnore,
+  onRestore,
+}: {
+  folder: Folder
+  search: string
+  extFilter: string
+  viewMode: 'pending' | 'ignored'
+  scan: ReturnType<typeof useScanFolder>
+  onIgnore: (fileId: number) => void
+  onRestore: (fileId: number) => void
+}) {
+  const { data: scans = [] } = useScans(folder.id)
+  const completedScans = useMemo(() => scans.filter(s => s.status === 'completed'), [scans])
+  const [selectedScanId, setSelectedScanId] = useState<number | null>(null)
 
-  const srcFolders = sourceFolders.filter(f => f.folder_type === 'source')
+  // 默认选中该文件夹最近一次已完成的扫描批次
+  useEffect(() => {
+    if (completedScans.length === 0) {
+      setSelectedScanId(null)
+      return
+    }
+    setSelectedScanId(prev => {
+      if (prev && completedScans.some(s => s.id === prev)) return prev
+      return completedScans[0].id
+    })
+  }, [completedScans])
 
-  const allFiles = useFiles({
+  const filesQuery = useFiles({
+    folderId: folder.id,
+    scanId: viewMode === 'pending' ? selectedScanId : undefined,
+    processingStatus: viewMode,
     search: search || undefined,
     extension: extFilter || undefined,
   })
-  const files: ProjectFile[] = allFiles.data ?? []
-  const srcFiles = files.filter(f => srcFolders.some(sf => sf.id === f.folder_id))
+  const files: ProjectFile[] = filesQuery.data ?? []
 
-  const grouped = useMemo(() => {
-    return srcFolders.map(folder => ({
-      folder,
-      files: srcFiles.filter(f => f.folder_id === folder.id),
-    }))
-  }, [srcFolders, srcFiles])
+  return (
+    <div className={styles.folderGroup}>
+      <div className={styles.folderGroupHeader}>
+        <span>{folder.absolute_path.split('/').pop()}</span>
+        <button
+          className={styles.btnScan}
+          onClick={() => scan.mutate(folder.id)}
+          disabled={scan.isPending}
+        >
+          {scan.isPending ? '扫描中…' : '扫描'}
+        </button>
+      </div>
 
-  const extensions = useMemo(
-    () => Array.from(new Set(srcFiles.map(f => f.extension).filter(Boolean))).sort(),
-    [srcFiles],
+      {viewMode === 'pending' && (
+        completedScans.length === 0 ? (
+          <div className={styles.emptyGroup}>暂无扫描记录，请先扫描。</div>
+        ) : (
+          <div className={styles.batchSelectRow}>
+            <select
+              className={styles.selectInput}
+              value={selectedScanId ?? ''}
+              onChange={e => setSelectedScanId(Number(e.target.value))}
+            >
+              {completedScans.map(s => (
+                <option key={s.id} value={s.id}>
+                  {new Date(s.started_at).toLocaleString()} · 新增{s.files_added} 修改{s.files_modified} 删除{s.files_deleted} · 待处理{s.pending_count ?? 0}
+                </option>
+              ))}
+            </select>
+          </div>
+        )
+      )}
+
+      <div className={styles.fileList}>
+        {files.length === 0 ? (
+          <div className={styles.emptyGroup}>
+            {viewMode === 'ignored' ? '暂无已忽略文件。' : '暂无待处理文件，请先扫描。'}
+          </div>
+        ) : (
+          files.map(file => (
+            <DraggableFileCard
+              key={file.id}
+              file={file}
+              onIgnore={viewMode === 'pending' ? onIgnore : undefined}
+              onRestore={viewMode === 'ignored' ? onRestore : undefined}
+            />
+          ))
+        )}
+      </div>
+    </div>
   )
+}
+
+// ─── 左侧面板 ────────────────────────────────────────────────────────────
+
+function ScanPoolPanel() {
+  const { data: sourceFolders = [] } = useFolders()
+  const [search, setSearch] = useState('')
+  const [extFilter, setExtFilter] = useState('')
+  const [viewMode, setViewMode] = useState<'pending' | 'ignored'>('pending')
+  const scan = useScanFolder()
+  const ignoreFile = useIgnoreFile()
+  const restoreFile = useRestoreFile()
+
+  const srcFolders = sourceFolders.filter(f => f.folder_type === 'source')
+
+  const allPendingFiles = useFiles({ processingStatus: 'pending' })
+  const totalPending = (allPendingFiles.data ?? []).filter(
+    f => srcFolders.some(sf => sf.id === f.folder_id),
+  ).length
+
+  const extensions = useMemo(() => {
+    const files = allPendingFiles.data ?? []
+    return Array.from(new Set(files.map(f => f.extension).filter(Boolean))).sort()
+  }, [allPendingFiles.data])
+
+  async function handleIgnore(fileId: number) {
+    try {
+      await ignoreFile.mutateAsync(fileId)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '忽略失败')
+    }
+  }
+
+  async function handleRestore(fileId: number) {
+    try {
+      await restoreFile.mutateAsync(fileId)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '恢复失败')
+    }
+  }
 
   return (
     <div className={styles.scanPanel}>
       <div className={styles.panelHeader}>
         <h2>扫描池</h2>
-        <span className={styles.badge}>{srcFiles.length} 个文件</span>
+        <span className={styles.badge}>{totalPending} 个待处理</span>
       </div>
       <div className={styles.filters}>
         <input
@@ -131,30 +267,37 @@ function ScanPoolPanel({ activeFolderIds }: { activeFolderIds: number[] }) {
           {extensions.map(ext => <option key={ext} value={ext}>{ext}</option>)}
         </select>
       </div>
+      <div className={styles.viewToggle}>
+        <button
+          type="button"
+          className={viewMode === 'pending' ? styles.viewTabActive : styles.viewTab}
+          onClick={() => setViewMode('pending')}
+        >
+          待处理
+        </button>
+        <button
+          type="button"
+          className={viewMode === 'ignored' ? styles.viewTabActive : styles.viewTab}
+          onClick={() => setViewMode('ignored')}
+        >
+          已忽略
+        </button>
+      </div>
 
       {srcFolders.length === 0 ? (
         <div className={styles.empty}>请在设置页添加「来源文件夹」并扫描。</div>
       ) : (
-        grouped.map(({ folder, files: folderFiles }) => (
-          <div key={folder.id} className={styles.folderGroup}>
-            <div className={styles.folderGroupHeader}>
-              <span>{folder.absolute_path.split('/').pop()}</span>
-              <button
-                className={styles.btnScan}
-                onClick={() => scan.mutate(folder.id)}
-                disabled={scan.isPending}
-              >
-                {scan.isPending ? '扫描中…' : '扫描'}
-              </button>
-            </div>
-            <div className={styles.fileList}>
-              {folderFiles.length === 0 ? (
-                <div className={styles.emptyGroup}>暂无文件，请先扫描。</div>
-              ) : (
-                folderFiles.map(file => <DraggableFileCard key={file.id} file={file} />)
-              )}
-            </div>
-          </div>
+        srcFolders.map(folder => (
+          <SourceFolderGroup
+            key={folder.id}
+            folder={folder}
+            search={search}
+            extFilter={extFilter}
+            viewMode={viewMode}
+            scan={scan}
+            onIgnore={handleIgnore}
+            onRestore={handleRestore}
+          />
         ))
       )}
     </div>
@@ -437,6 +580,7 @@ function OrganizePanel({
 
 export default function WorkspacePage() {
   const assign = useAssignFile()
+  const ignoreFile = useIgnoreFile()
   const { data: allFiles = [] } = useFiles({})
   const [isDraggingFile, setIsDraggingFile] = useState(false)
   const [activeFileId, setActiveFileId] = useState<number | null>(null)
@@ -445,6 +589,7 @@ export default function WorkspacePage() {
   // ─── 智能分类 Drawer 状态 ─────────────────────────────────────────────
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [suggestions, setSuggestions] = useState<AssignmentSuggestion[]>([])
+  const [lowConfidenceSuggestions, setLowConfidenceSuggestions] = useState<AssignmentSuggestion[]>([])
   const [skippedCount, setSkippedCount] = useState(0)
   const [suggestError, setSuggestError] = useState<string | null>(null)
   const [isSuggesting, setIsSuggesting] = useState(false)
@@ -462,6 +607,7 @@ export default function WorkspacePage() {
     setDrawerOpen(true)
     setSuggestError(null)
     setSuggestions([])
+    setLowConfidenceSuggestions([])
     setSkippedCount(0)
     setSuggestTotal(0)
     setIsSuggesting(true)
@@ -471,15 +617,20 @@ export default function WorkspacePage() {
       {
         onStart: total => setSuggestTotal(total),
         onItem: item => {
-          if (!item.confident || 'error' in item) {
+          if ('error' in item) {
             setSkippedCount(count => count + 1)
             return
           }
-          const confident = item as AssignmentSuggestion
-          setSuggestions(prev => {
-            const exists = prev.some(s => s.file_id === confident.file_id)
-            return exists ? prev.map(s => s.file_id === confident.file_id ? confident : s) : [...prev, confident]
-          })
+          const suggestion = item as AssignmentSuggestion
+          const update = (prev: AssignmentSuggestion[]) => {
+            const exists = prev.some(s => s.file_id === suggestion.file_id)
+            return exists ? prev.map(s => s.file_id === suggestion.file_id ? suggestion : s) : [...prev, suggestion]
+          }
+          if (suggestion.confident) {
+            setSuggestions(update)
+          } else {
+            setLowConfidenceSuggestions(update)
+          }
         },
         onDone: result => {
           setIsSuggesting(false)
@@ -498,6 +649,7 @@ export default function WorkspacePage() {
     try {
       await assign.mutateAsync({ projectId: suggestion.project_id, fileId: suggestion.file_id })
       setSuggestions(prev => prev.filter(s => s.file_id !== suggestion.file_id))
+      setLowConfidenceSuggestions(prev => prev.filter(s => s.file_id !== suggestion.file_id))
     } catch (err) {
       alert(err instanceof Error ? err.message : '归档失败')
     } finally {
@@ -505,8 +657,14 @@ export default function WorkspacePage() {
     }
   }
 
-  function handleDismiss(fileId: number) {
-    setSuggestions(prev => prev.filter(s => s.file_id !== fileId))
+  async function handleDismiss(fileId: number) {
+    try {
+      await ignoreFile.mutateAsync(fileId)
+      setSuggestions(prev => prev.filter(s => s.file_id !== fileId))
+      setLowConfidenceSuggestions(prev => prev.filter(s => s.file_id !== fileId))
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '忽略失败')
+    }
   }
 
   function handleCloseSuggest() {
@@ -528,7 +686,7 @@ export default function WorkspacePage() {
     }
   }
 
-  function handleDragEnd(event: DragEndEvent) {
+  async function handleDragEnd(event: DragEndEvent) {
     setIsDraggingFile(false)
     setActiveFileId(null)
     const { active, over } = event
@@ -540,7 +698,11 @@ export default function WorkspacePage() {
       : null
 
     if (fileId && projectIdStr) {
-      assign.mutate({ projectId: Number(projectIdStr), fileId })
+      try {
+        await assign.mutateAsync({ projectId: Number(projectIdStr), fileId })
+      } catch (err) {
+        alert(err instanceof Error ? err.message : '归档失败')
+      }
     }
   }
 
@@ -555,7 +717,7 @@ export default function WorkspacePage() {
         <div className={styles.pageHeaderContent}>
           <div>
             <h1>工作台</h1>
-            <p>将左侧扫描到的文件拖拽到右侧项目中完成归档。</p>
+            <p>把散落的本地文件，自动沉淀成带 AI 记忆的项目库。将左侧扫描到的文件拖拽到右侧项目中完成归档。</p>
           </div>
           <button
             className={styles.btnSuggest}
@@ -574,7 +736,7 @@ export default function WorkspacePage() {
         onDragCancel={handleDragCancel}
       >
         <div className={styles.workspace}>
-          <ScanPoolPanel activeFolderIds={[]} />
+          <ScanPoolPanel />
           <OrganizePanel isDraggingFile={isDraggingFile} onTargetFolderChange={setTargetFolderId} />
         </div>
         <DragOverlay dropAnimation={null}>
@@ -584,6 +746,7 @@ export default function WorkspacePage() {
       <SuggestionDrawer
         open={drawerOpen}
         suggestions={suggestions}
+        lowConfidenceSuggestions={lowConfidenceSuggestions}
         skippedCount={skippedCount}
         totalCount={suggestTotal}
         isSuggesting={isSuggesting}

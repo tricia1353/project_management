@@ -16,7 +16,17 @@ export async function createProject(input: { folder_id: number; path: string; na
   return data
 }
 
-export async function updateProject(id: number, input: { name?: string; status?: 'active' | 'archived'; kanban_status?: KanbanStatus }) {
+export async function updateProject(
+  id: number,
+  input: {
+    name?: string
+    status?: 'active' | 'archived'
+    kanban_status?: KanbanStatus
+    owner_name?: string | null
+    collaborators?: string[]
+    next_step?: string | null
+  },
+) {
   const { data } = await api.patch<Project>(`/projects/${id}`, input)
   return data
 }
@@ -71,5 +81,10 @@ export async function completeProject(projectId: number, scope: 'current' | 'wit
 
 export async function restoreProject(projectId: number, scope: 'current' | 'with_children' = 'current') {
   const { data } = await api.post<{ ok: boolean; affected_count: number }>(`/projects/${projectId}/restore`, { scope })
+  return data
+}
+
+export async function exportProjectMarkdown(projectId: number): Promise<string> {
+  const { data } = await api.get<string>(`/projects/${projectId}/export.md`, { responseType: 'text' })
   return data
 }

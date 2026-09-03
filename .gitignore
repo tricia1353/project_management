@@ -8,3 +8,6 @@ server/data/*.db-wal
 .DS_Store
 .env
 .env.local
+
+# 本地 Agent 工作笔记，不入库
+.workbuddy/

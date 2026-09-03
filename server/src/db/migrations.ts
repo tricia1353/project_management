@@ -187,6 +187,46 @@ const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_project_share_files_share ON project_share_files(share_id);
     `,
   },
+  {
+    version: 16,
+    sql: `__v16_files_mtime_size__`,
+  },
+  {
+    version: 17,
+    sql: `
+      CREATE TABLE IF NOT EXISTS feishu_settings (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        app_id         TEXT NOT NULL DEFAULT '',
+        app_secret     TEXT NOT NULL DEFAULT '',
+        document_id    TEXT NOT NULL DEFAULT '',
+        owner_open_id  TEXT NOT NULL DEFAULT '',
+        base_url       TEXT NOT NULL DEFAULT 'https://open.feishu.cn',
+        enabled        INTEGER NOT NULL DEFAULT 0,
+        created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `,
+  },
+  {
+    version: 18,
+    sql: `__v18_file_processing_state__`,
+  },
+  {
+    version: 19,
+    sql: `__v19_project_workflow__`,
+  },
+  {
+    version: 20,
+    sql: `__v20_file_manual_suggestion__`,
+  },
+  {
+    version: 21,
+    sql: `__v21_file_version_groups__`,
+  },
+  {
+    version: 22,
+    sql: `__v22_version_group_events__`,
+  },
 ]
 
 /**
@@ -307,6 +347,95 @@ export function runMigrations(): void {
         try {
           db.exec(`ALTER TABLE report_templates ADD COLUMN original_filename TEXT`)
         } catch { /* 列已存在，忽略 */ }
+      } else if (m.sql === '__v16_files_mtime_size__') {
+        // 为 files 表补充 mtime / size，用于扫描快筛（列已存在则忽略）
+        try { db.exec(`ALTER TABLE files ADD COLUMN mtime INTEGER`) } catch { /* 已存在，忽略 */ }
+        try { db.exec(`ALTER TABLE files ADD COLUMN size INTEGER`) } catch { /* 已存在，忽略 */ }
+      } else if (m.sql === '__v18_file_processing_state__') {
+        // 归档处理状态：pending（待处理）/ archived（已归档）/ ignored（标记为不归档）
+        // last_scan_id 记录该文件是哪一次扫描批次新增/变更的，用于按批次展示扫描池
+        try {
+          db.exec(`ALTER TABLE files ADD COLUMN processing_status TEXT NOT NULL DEFAULT 'pending'`)
+        } catch { /* 已存在，忽略 */ }
+        try {
+          db.exec(`ALTER TABLE files ADD COLUMN last_scan_id INTEGER REFERENCES scans(id)`)
+        } catch { /* 已存在，忽略 */ }
+        try {
+          db.exec(`ALTER TABLE files ADD COLUMN ignored_at TEXT`)
+        } catch { /* 已存在，忽略 */ }
+        // 已有的 file_assignments 记录回填为 archived，避免历史数据在扫描池里重复出现
+        db.exec(`
+          UPDATE files SET processing_status = 'archived'
+          WHERE id IN (SELECT DISTINCT source_file_id FROM file_assignments)
+        `)
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_files_processing ON files(folder_id, processing_status);
+          CREATE INDEX IF NOT EXISTS idx_files_last_scan ON files(last_scan_id);
+        `)
+      } else if (m.sql === '__v19_project_workflow__') {
+        // 项目管理工作流字段：负责人 / 协作者（JSON 数组文本）/ 下一步
+        try { db.exec(`ALTER TABLE projects ADD COLUMN owner_name TEXT`) } catch { /* 已存在，忽略 */ }
+        try { db.exec(`ALTER TABLE projects ADD COLUMN collaborators_json TEXT`) } catch { /* 已存在，忽略 */ }
+        try { db.exec(`ALTER TABLE projects ADD COLUMN next_step TEXT`) } catch { /* 已存在，忽略 */ }
+      } else if (m.sql === '__v20_file_manual_suggestion__') {
+        // 文件人工修改建议：用于文件详情页备注和可选消息推送
+        try { db.exec(`ALTER TABLE files ADD COLUMN manual_suggestion TEXT`) } catch { /* 已存在，忽略 */ }
+        try { db.exec(`ALTER TABLE files ADD COLUMN manual_suggestion_updated_at TEXT`) } catch { /* 已存在，忽略 */ }
+      } else if (m.sql === '__v21_file_version_groups__') {
+        // 版本组：让同一材料跨文件夹/路径也能归入同一条版本线，并保留手动调整记录
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS file_version_groups (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            canonical_name  TEXT,
+            created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+          CREATE TABLE IF NOT EXISTS file_suggestion_history (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            file_id           INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+            manual_suggestion TEXT,
+            pushed_to_messages INTEGER NOT NULL DEFAULT 0,
+            created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+        `)
+        try { db.exec(`ALTER TABLE files ADD COLUMN version_group_id INTEGER REFERENCES file_version_groups(id)`) } catch { /* 已存在，忽略 */ }
+        try { db.exec(`ALTER TABLE files ADD COLUMN version_group_source TEXT`) } catch { /* 已存在，忽略 */ }
+        db.exec(`
+          INSERT INTO file_version_groups (canonical_name)
+          SELECT DISTINCT f.filename
+          FROM files f
+          WHERE f.version_group_id IS NULL;
+        `)
+        db.exec(`
+          UPDATE files
+          SET version_group_id = (
+            SELECT g.id
+            FROM file_version_groups g
+            WHERE g.canonical_name = files.filename
+            ORDER BY g.id DESC
+            LIMIT 1
+          ),
+          version_group_source = COALESCE(version_group_source, 'migration')
+          WHERE version_group_id IS NULL;
+        `)
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_files_version_group ON files(version_group_id);
+          CREATE INDEX IF NOT EXISTS idx_suggestion_history_file ON file_suggestion_history(file_id, created_at DESC);
+        `)
+      } else if (m.sql === '__v22_version_group_events__') {
+        // 版本组人工调整历史：合并/拆分，用于审计
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS file_version_group_events (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            file_id        INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+            from_group_id  INTEGER,
+            to_group_id    INTEGER NOT NULL,
+            event_type     TEXT NOT NULL,
+            reason         TEXT,
+            created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+          CREATE INDEX IF NOT EXISTS idx_version_group_events_file ON file_version_group_events(file_id, created_at DESC);
+        `)
       } else {
         db.exec(m.sql)
       }

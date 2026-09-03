@@ -5,6 +5,7 @@ import multipart from '@fastify/multipart'
 import { SERVER_PORT } from './config.js'
 import { runMigrations } from './db/migrations.js'
 import { initScheduler, stopAllJobs } from './services/scheduler.js'
+import { requeueStuckGroupedVersions } from './services/aiSummary.js'
 import { folderRoutes } from './routes/folders.js'
 import { fileRoutes } from './routes/files.js'
 import { versionRoutes } from './routes/versions.js'
@@ -15,11 +16,14 @@ import { projectRoutes } from './routes/projects.js'
 import { templateRoutes } from './routes/templates.js'
 import { messageRoutes } from './routes/messages.js'
 import { chatRoutes } from './routes/chat.js'
+import { reportRoutes } from './routes/reports.js'
 import { shareRoutes } from './routes/share.js'
+import { feishuRoutes } from './routes/feishu.js'
 import logger from './utils/logger.js'
 
 async function bootstrap() {
   runMigrations()
+  requeueStuckGroupedVersions()
 
   const app = Fastify({
     logger: {
@@ -46,6 +50,8 @@ async function bootstrap() {
   await app.register(messageRoutes, { prefix: '/api' })
   await app.register(chatRoutes, { prefix: '/api' })
   await app.register(shareRoutes, { prefix: '/api' })
+  await app.register(reportRoutes, { prefix: '/api' })
+  await app.register(feishuRoutes, { prefix: '/api' })
 
   app.get('/api/health', async () => ({ ok: true }))
 

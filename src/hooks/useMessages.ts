@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as messagesApi from '@/api/messages'
 
-export function useMessages(status: 'active' | 'unread' | 'all' = 'active') {
+export type MessageFilter = 'active' | 'unread' | 'snoozed' | 'all'
+
+export function useMessages(status: MessageFilter = 'active') {
   return useQuery({
     queryKey: ['messages', status],
     queryFn: () => messagesApi.getMessages({ status }),
@@ -13,6 +15,14 @@ export function useUnreadMessageCount() {
   return useQuery({
     queryKey: ['messages', 'unread-count'],
     queryFn: messagesApi.getUnreadMessageCount,
+    refetchInterval: 30_000,
+  })
+}
+
+export function useSnoozedMessageCount() {
+  return useQuery({
+    queryKey: ['messages', 'snoozed-count'],
+    queryFn: messagesApi.getSnoozedMessageCount,
     refetchInterval: 30_000,
   })
 }

@@ -6,6 +6,7 @@ export type FolderType = 'source' | 'target'
 export type ProjectStatus = 'active' | 'archived'
 export type ProjectHealthStatus = 'active' | 'stalled' | 'needs_review' | 'completed'
 export type ProjectEventType = 'update' | 'completed' | 'restored' | 'status_changed'
+export type FileProcessingStatus = 'pending' | 'archived' | 'ignored'
 
 export interface Folder {
   id: number
@@ -24,10 +25,19 @@ export interface ProjectFile {
   filename: string
   extension: string
   current_checksum: string | null
+  mtime: number | null
+  size: number | null
   status: KanbanStatus
   is_deleted: number
   version_count: number
   last_event_type: FileEventType | null
+  processing_status: FileProcessingStatus
+  last_scan_id: number | null
+  ignored_at: string | null
+  manual_suggestion?: string | null
+  manual_suggestion_updated_at?: string | null
+  version_group_id?: number | null
+  version_group_source?: string | null
   created_at: string
   updated_at: string
 }
@@ -44,6 +54,48 @@ export interface FileVersion {
   ai_content_summary: string | null
   ai_progress_impact: string | null
   created_at: string
+  // 以下字段仅在按版本组聚合返回时（GET /files/:id/versions）附带
+  source_file_id?: number
+  source_relative_path?: string
+  source_filename?: string
+  is_current_file_version?: boolean
+  series_version_number?: number
+}
+
+export interface FileVersionGroup {
+  id: number
+  canonical_name: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface VersionGroupCandidate {
+  file_id: number
+  filename: string
+  relative_path: string
+  folder_id: number
+  version_group_id: number | null
+  reason: 'filename_match' | 'checksum_match'
+}
+
+export interface VersionGroupEvent {
+  id: number
+  file_id: number
+  from_group_id: number | null
+  to_group_id: number
+  event_type: 'manual_merge' | 'manual_split'
+  reason: string | null
+  created_at: string
+}
+
+export interface FileSuggestionHistoryEntry {
+  id: number
+  file_id: number
+  manual_suggestion: string | null
+  pushed_to_messages: number
+  created_at: string
+  source_filename?: string
+  source_relative_path?: string
 }
 
 export interface ScanRecord {
@@ -98,6 +150,10 @@ export interface Project {
   kanban_status: KanbanStatus
   completed_at: string | null
   completed_scope: string | null
+  owner_name?: string | null
+  collaborators_json?: string | null
+  collaborators?: string[]
+  next_step?: string | null
   created_at: string
   updated_at: string
   folder_path?: string
@@ -119,6 +175,18 @@ export interface AISettings {
   model: string
   temperature: number
   max_tokens: number
+  enabled: number
+  created_at: string
+  updated_at: string
+}
+
+export interface FeishuSettings {
+  id: number
+  app_id: string
+  app_secret: string
+  document_id: string
+  owner_open_id: string
+  base_url: string
   enabled: number
   created_at: string
   updated_at: string

@@ -133,6 +133,7 @@ export const aiRoutes: FastifyPluginAsync = async fastify => {
     const fileWhere = [
       'fo.folder_type = ?',
       'f.is_deleted = 0',
+      `f.processing_status = 'pending'`,
       'NOT EXISTS (SELECT 1 FROM file_assignments fa WHERE fa.source_file_id = f.id)',
     ]
     const fileParams: unknown[] = ['source']

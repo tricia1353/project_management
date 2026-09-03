@@ -44,3 +44,11 @@ export function useScanFolder() {
     },
   })
 }
+
+export function useScans(folderId: number | null) {
+  return useQuery({
+    queryKey: ['scans', folderId],
+    queryFn: () => foldersApi.getScans(folderId!),
+    enabled: !!folderId,
+  })
+}

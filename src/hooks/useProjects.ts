@@ -35,8 +35,20 @@ export function useCreateProject() {
 export function useUpdateProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, input }: { id: number; input: { name?: string; status?: 'active' | 'archived'; kanban_status?: import('@/types').KanbanStatus } }) =>
-      projectsApi.updateProject(id, input),
+    mutationFn: ({
+      id,
+      input,
+    }: {
+      id: number
+      input: {
+        name?: string
+        status?: 'active' | 'archived'
+        kanban_status?: import('@/types').KanbanStatus
+        owner_name?: string | null
+        collaborators?: string[]
+        next_step?: string | null
+      }
+    }) => projectsApi.updateProject(id, input),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ['projects'] })
       qc.invalidateQueries({ queryKey: ['project', id] })
@@ -60,6 +72,7 @@ export function useAssignFile() {
     onSuccess: (_, { projectId }) => {
       qc.invalidateQueries({ queryKey: ['projects'] })
       qc.invalidateQueries({ queryKey: ['assignments', projectId] })
+      qc.invalidateQueries({ queryKey: ['files'] })
     },
   })
 }

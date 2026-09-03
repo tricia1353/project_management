@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder, useScanFolder } from '@/hooks/useFolders'
 import { useAISettings, useSaveAISettings, useTestAISettings } from '@/hooks/useAISettings'
 import { useProjectStatusSettings, useSaveProjectStatusSettings } from '@/hooks/useAppSettings'
-import type { AISettings, Folder, FolderType } from '@/types'
+import { useFeishuSettings, useSaveFeishuSettings, useTestFeishuSettings } from '@/hooks/useFeishuSettings'
+import type { AISettings, Folder, FolderType, FeishuSettings } from '@/types'
 import styles from './SettingsPage.module.css'
 
 const INTERVAL_OPTIONS = [
@@ -307,6 +308,90 @@ function ProjectStatusSettingsForm() {
   )
 }
 
+function FeishuSettingsForm() {
+  const { data: saved, isLoading } = useFeishuSettings()
+  const save = useSaveFeishuSettings()
+  const test = useTestFeishuSettings()
+  const [form, setForm] = useState<FeishuSettings>({
+    app_id: '',
+    app_secret: '',
+    document_id: '',
+    owner_open_id: '',
+    base_url: 'https://open.feishu.cn',
+    enabled: 0,
+  })
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  useEffect(() => {
+    if (saved) setForm(prev => ({ ...prev, ...saved }))
+  }, [saved?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleChange = (key: keyof FeishuSettings, value: unknown) => {
+    setForm(f => ({ ...f, [key]: value }))
+    setTestResult(null)
+  }
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await save.mutateAsync(form)
+    alert('飞书设置已保存')
+  }
+
+  const handleTest = async () => {
+    const result = await test.mutateAsync(form)
+    setTestResult(result)
+  }
+
+  if (isLoading) return <div>加载中…</div>
+
+  return (
+    <form className={styles.aiForm} onSubmit={handleSave}>
+      <p className={styles.hint}>
+        在飞书开放平台（open.feishu.cn）创建<strong>自建应用</strong>，拿到 App ID 与 App Secret。建议先在飞书建一篇空白云文档，
+        把该应用加为「可编辑」协作者，再把文档链接中的 <code>docx/xxx</code> 填入下方「目标文档 ID」。留空则首次推送时自动创建文档。
+      </p>
+      <div className={styles.formRow}>
+        <label>App ID</label>
+        <input className={styles.input} value={form.app_id} onChange={e => handleChange('app_id', e.target.value)} placeholder="cli_xxxxxxxx" />
+      </div>
+      <div className={styles.formRow}>
+        <label>App Secret</label>
+        <input className={styles.input} type="password" value={form.app_secret} onChange={e => handleChange('app_secret', e.target.value)} placeholder="xxxxxxxx" />
+      </div>
+      <div className={styles.formRow}>
+        <label>目标文档 ID</label>
+        <input className={styles.input} value={form.document_id} onChange={e => handleChange('document_id', e.target.value)} placeholder="docx 后的文档 ID（可留空自动创建）" />
+      </div>
+      <div className={styles.formRow}>
+        <label>协作者 Open ID</label>
+        <input className={styles.input} value={form.owner_open_id} onChange={e => handleChange('owner_open_id', e.target.value)} placeholder="可选，自动建文档时授权给你（open_id）" />
+      </div>
+      <div className={styles.formRow}>
+        <label>API 域名</label>
+        <input className={styles.input} value={form.base_url} onChange={e => handleChange('base_url', e.target.value)} placeholder="https://open.feishu.cn" />
+      </div>
+      <div className={styles.formRow}>
+        <label>启用推送</label>
+        <input type="checkbox" checked={form.enabled === 1} onChange={e => handleChange('enabled', e.target.checked ? 1 : 0)} />
+      </div>
+      <div className={styles.formActions}>
+        <button type="button" className={styles.btnSecondary} onClick={handleTest} disabled={test.isPending}>
+          {test.isPending ? '测试中…' : '测试连接'}
+        </button>
+        <button type="submit" className={styles.btnPrimary} disabled={save.isPending}>
+          {save.isPending ? '保存中…' : '保存配置'}
+        </button>
+      </div>
+      {testResult && (
+        <div className={testResult.ok ? styles.testOk : styles.testFail}>
+          {testResult.ok ? '✅' : '❌'} {testResult.message}
+        </div>
+      )}
+      <p className={styles.hint}>⚠️ App Secret 明文保存在本地数据库，Demo 阶段仅限本机使用。</p>
+    </form>
+  )
+}
+
 export default function SettingsPage() {
   const { data: folders, isLoading } = useFolders()
   const [showAddForm, setShowAddForm] = useState(false)
@@ -340,6 +425,11 @@ export default function SettingsPage() {
       <section className={styles.section}>
         <h2>AI 模型配置</h2>
         <AISettingsForm />
+      </section>
+
+      <section className={styles.section}>
+        <h2>飞书云文档推送</h2>
+        <FeishuSettingsForm />
       </section>
     </div>
   )

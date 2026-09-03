@@ -6,6 +6,7 @@ import { archiveVersion } from './archiver.js'
 import { EXCLUDED_DIRS, EXCLUDED_FILES } from '../config.js'
 import logger from '../utils/logger.js'
 import { enqueueAISummary } from './aiSummary.js'
+import { resolveVersionGroupForNewFile } from './versionGroups.js'
 import type { ProjectFile } from '../types.js'
 
 // 防并发：正在扫描的 folderId
@@ -14,6 +15,8 @@ const activeScanFolderIds = new Set<number>()
 interface WalkEntry {
   absolutePath: string
   relativePath: string
+  mtime: number
+  size: number
 }
 
 async function walkDir(rootPath: string, currentPath: string): Promise<WalkEntry[]> {
@@ -42,6 +45,8 @@ async function walkDir(rootPath: string, currentPath: string): Promise<WalkEntry
         results.push({
           absolutePath: absPath,
           relativePath: relative(rootPath, absPath),
+          mtime: Math.floor(s.mtimeMs),
+          size: s.size,
         })
       }
     } catch {
@@ -95,7 +100,13 @@ export async function scanFolder(folderId: number) {
 
     // 处理新增和修改
     for (const entry of scannedFiles) {
-      const { absolutePath, relativePath } = entry
+      const { absolutePath, relativePath, mtime, size } = entry
+      const existing = existingByPath.get(relativePath)
+
+      // 快速路径：已存在且未删除，mtime + size 均未变化 → 内容几乎必然未变，跳过哈希计算与 DB 写入
+      if (existing && !existing.is_deleted && existing.mtime === mtime && existing.size === size) {
+        continue
+      }
 
       let checksum: string | null = null
       try {
@@ -104,23 +115,34 @@ export async function scanFolder(folderId: number) {
         continue // 单文件失败跳过
       }
 
-      const existing = existingByPath.get(relativePath)
-
       if (!existing) {
-        // 新增
+        // 新增：先按 checksum/文件名解析应归属的版本组，让跨文件夹的同一份材料接续历史
+        const filename = basename(relativePath)
+        const { versionGroupId, versionGroupSource } = resolveVersionGroupForNewFile({
+          filename,
+          checksum,
+        })
+
         const fileResult = db
           .prepare(`
             INSERT INTO files (
               folder_id, relative_path, filename, extension,
-              current_checksum, status, is_deleted, version_count, last_event_type
-            ) VALUES (?, ?, ?, ?, ?, 'backlog', 0, 1, 'created')
+              current_checksum, status, is_deleted, version_count, last_event_type,
+              mtime, size, processing_status, last_scan_id, ignored_at,
+              version_group_id, version_group_source
+            ) VALUES (?, ?, ?, ?, ?, 'backlog', 0, 1, 'created', ?, ?, 'pending', ?, NULL, ?, ?)
           `)
           .run(
             folderId,
             relativePath,
-            basename(relativePath),
+            filename,
             extname(relativePath).toLowerCase(),
             checksum,
+            mtime,
+            size,
+            scanId,
+            versionGroupId,
+            versionGroupSource,
           )
 
         const fileId = Number(fileResult.lastInsertRowid)
@@ -135,6 +157,8 @@ export async function scanFolder(folderId: number) {
         })
 
         filesAdded++
+        // 新物理文件也可能已被归入已有版本组（跨文件夹接续同一份材料），需要进入摘要队列，
+        // 由 aiSummary.ts 的组感知逻辑判断是否真的是基线版本，不在这里预先过滤。
         changedFileIds.push(fileId)
       } else if (existing.is_deleted) {
         // 删除后文件重新出现，作为 restored 版本记录
@@ -152,14 +176,16 @@ export async function scanFolder(folderId: number) {
 
         db.prepare(`
           UPDATE files
-          SET current_checksum = ?, is_deleted = 0, version_count = ?, last_event_type = 'restored', updated_at = datetime('now')
+          SET current_checksum = ?, is_deleted = 0, version_count = ?, last_event_type = 'restored',
+              mtime = ?, size = ?, processing_status = 'pending', ignored_at = NULL, last_scan_id = ?,
+              updated_at = datetime('now')
           WHERE id = ?
-        `).run(checksum, newVersionNumber, existing.id)
+        `).run(checksum, newVersionNumber, mtime, size, scanId, existing.id)
 
         filesAdded++
         changedFileIds.push(existing.id)
       } else if (existing.current_checksum !== checksum) {
-        // 修改：归档新版本并更新记录
+        // 修改：归档新版本并更新记录。内容变化后重新进入待处理，因为之前的归档/忽略判断基于旧内容
         const newVersionNumber = existing.version_count + 1
 
         await archiveVersion({
@@ -174,12 +200,19 @@ export async function scanFolder(folderId: number) {
 
         db.prepare(`
           UPDATE files
-          SET current_checksum = ?, version_count = ?, last_event_type = 'modified', updated_at = datetime('now')
+          SET current_checksum = ?, version_count = ?, last_event_type = 'modified',
+              mtime = ?, size = ?, processing_status = 'pending', ignored_at = NULL, last_scan_id = ?,
+              updated_at = datetime('now')
           WHERE id = ?
-        `).run(checksum, newVersionNumber, existing.id)
+        `).run(checksum, newVersionNumber, mtime, size, scanId, existing.id)
 
         filesModified++
         changedFileIds.push(existing.id)
+      } else {
+        // mtime/size 变了但内容没变：仅刷新存储的 mtime/size，避免下次重复计算哈希
+        db.prepare(`
+          UPDATE files SET mtime = ?, size = ?, updated_at = datetime('now') WHERE id = ?
+        `).run(mtime, size, existing.id)
       }
     }
 
@@ -206,8 +239,19 @@ export async function scanFolder(folderId: number) {
         })
 
         filesDeleted++
+        changedFileIds.push(existing.id)
       }
     }
+
+    // 兼容 v18 迁移前已存在的待处理文件：这些文件没有批次号，但仍应出现在当前扫描批次中。
+    db.prepare(`
+      UPDATE files
+      SET last_scan_id = ?, updated_at = datetime('now')
+      WHERE folder_id = ?
+        AND is_deleted = 0
+        AND processing_status = 'pending'
+        AND last_scan_id IS NULL
+    `).run(scanId, folderId)
 
     // 完成扫描记录
     db.prepare(`

@@ -4,12 +4,26 @@ import {
   useMessages, useAnalyzeProjectHealth, useDismissMessage,
   useArchiveMessageProject, useAddMessageProjectEvent, useRemindMessage, useMarkMessageRead,
 } from '@/hooks/useMessages'
+import type { MessageFilter } from '@/hooks/useMessages'
 import styles from './MessagesPage.module.css'
 
 type ActionPanelState =
   | { type: 'none' }
   | { type: 'add-event'; id: number }
   | { type: 'remind'; id: number }
+
+type Tab = 'active' | 'snoozed' | 'all'
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'active', label: '待处理' },
+  { key: 'snoozed', label: '稍后提醒' },
+  { key: 'all', label: '全部' },
+]
+
+const TYPE_LABEL: Record<string, string> = {
+  manual_suggestion: '修改建议',
+  health_alert: '项目提醒',
+}
 
 const HEALTH_LABEL: Record<string, string> = {
   stalled: '停滞',
@@ -23,8 +37,34 @@ const HEALTH_COLOR: Record<string, string> = {
   active: '#16a34a',
 }
 
+const EMPTY_TEXT: Record<Tab, { title: string; hint: string }> = {
+  active: { title: '暂无待处理消息', hint: '点击「刷新健康分析」检查项目状态' },
+  snoozed: { title: '暂无稍后提醒', hint: '设置了「稍后提醒」的消息会出现在这里' },
+  all: { title: '暂无消息', hint: '' },
+}
+
+function parseMetadata(msg: AppMessage): { filename?: string; relative_path?: string; version_count?: number; health_status?: string } {
+  if (!msg.metadata_json) return {}
+  try {
+    return JSON.parse(msg.metadata_json)
+  } catch {
+    return {}
+  }
+}
+
+function getSubject(msg: AppMessage, metadata: ReturnType<typeof parseMetadata>) {
+  if (metadata.filename) return metadata.filename
+  if (msg.project_name) return msg.project_path ?? msg.project_name
+  return null
+}
+
 export default function MessagesPage() {
-  const { data: messages = [], isFetching } = useMessages('active')
+  const [tab, setTab] = useState<Tab>('active')
+  const filterMap: Record<Tab, MessageFilter> = { active: 'active', snoozed: 'snoozed', all: 'all' }
+  const { data: messages = [], isFetching } = useMessages(filterMap[tab])
+  const { data: activeMessages = [] } = useMessages('active')
+  const { data: snoozedMessages = [] } = useMessages('snoozed')
+
   const analyzeHealth = useAnalyzeProjectHealth()
   const dismiss = useDismissMessage()
   const archiveProject = useArchiveMessageProject()
@@ -36,6 +76,12 @@ export default function MessagesPage() {
   const [eventInput, setEventInput] = useState('')
   const [remindInput, setRemindInput] = useState('')
   const [analyzeResult, setAnalyzeResult] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+
+  function showToast(text: string) {
+    setToast(text)
+    setTimeout(() => setToast(current => (current === text ? null : current)), 3000)
+  }
 
   async function handleAnalyze() {
     setAnalyzeResult(null)
@@ -69,6 +115,7 @@ export default function MessagesPage() {
     await remind.mutateAsync({ id: msgId, remindAt: date.toISOString() })
     setRemindInput('')
     setActionPanel({ type: 'none' })
+    showToast(`已设为 ${date.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })} 提醒，可在「稍后提醒」查看`)
   }
 
   function togglePanel(msg: AppMessage, type: 'add-event' | 'remind') {
@@ -80,7 +127,7 @@ export default function MessagesPage() {
     }
   }
 
-  const unreadCount = messages.filter(m => m.status === 'unread').length
+  const emptyText = EMPTY_TEXT[tab]
 
   return (
     <div className={styles.page}>
@@ -108,30 +155,47 @@ export default function MessagesPage() {
         </div>
       )}
 
-      <div className={styles.summary}>
-        <span className={styles.badge}>{messages.length} 条消息</span>
-        {unreadCount > 0 && <span className={styles.badgeUnread}>{unreadCount} 未读</span>}
+      {toast && <div className={styles.toast}>{toast}</div>}
+
+      <div className={styles.tabs}>
+        {TABS.map(t => {
+          const count = t.key === 'active' ? activeMessages.length : t.key === 'snoozed' ? snoozedMessages.length : undefined
+          return (
+            <button
+              key={t.key}
+              type="button"
+              className={`${styles.tab} ${tab === t.key ? styles.tabActive : ''}`}
+              onClick={() => setTab(t.key)}
+            >
+              {t.label}
+              {typeof count === 'number' && count > 0 && <span className={styles.tabCount}>{count}</span>}
+            </button>
+          )
+        })}
         {isFetching && <span className={styles.fetching}>刷新中…</span>}
       </div>
 
       {messages.length === 0 && !analyzeHealth.isPending ? (
         <div className={styles.empty}>
           <div className={styles.emptyIcon}>✅</div>
-          <p>暂无需要处理的消息</p>
-          <p className={styles.emptyHint}>点击「刷新健康分析」检查项目状态</p>
+          <p>{emptyText.title}</p>
+          {emptyText.hint && <p className={styles.emptyHint}>{emptyText.hint}</p>}
         </div>
       ) : (
         <div className={styles.list}>
           {messages.map(msg => {
-            const metadata = msg.metadata_json ? JSON.parse(msg.metadata_json) as { health_status?: string } : {}
+            const metadata = parseMetadata(msg)
             const healthStatus = metadata.health_status ?? ''
+            const subject = getSubject(msg, metadata)
             const isActionOpen = actionPanel.type !== 'none' && actionPanel.id === msg.id
+            const typeLabel = TYPE_LABEL[msg.type] ?? msg.type
 
             return (
               <div key={msg.id} className={`${styles.card} ${msg.status === 'unread' ? styles.cardUnread : ''}`}>
                 <div className={styles.cardHeader}>
                   <div className={styles.cardTitleRow}>
                     {msg.status === 'unread' && <span className={styles.dot} />}
+                    <span className={styles.typeTag}>{typeLabel}</span>
                     <span className={styles.cardTitle}>{msg.title}</span>
                     {healthStatus && (
                       <span
@@ -142,9 +206,7 @@ export default function MessagesPage() {
                       </span>
                     )}
                   </div>
-                  {msg.project_name && (
-                    <div className={styles.projectTag}>📁 {msg.project_path ?? msg.project_name}</div>
-                  )}
+                  {subject && <div className={styles.projectTag}>📁 {subject}</div>}
                 </div>
 
                 <div className={styles.cardBody}>{msg.body}</div>
@@ -163,7 +225,7 @@ export default function MessagesPage() {
                     title={!msg.project_id ? '无关联项目' : ''}
                     type="button"
                   >
-                    ✅ 直接归档
+                    ✅ 完成
                   </button>
                   <button
                     className={`${styles.btnAddEvent} ${isActionOpen && actionPanel.type === 'add-event' ? styles.btnActive : ''}`}
@@ -177,7 +239,7 @@ export default function MessagesPage() {
                     onClick={() => togglePanel(msg, 'remind')}
                     type="button"
                   >
-                    ⏰ 后续提醒
+                    ⏰ 稍后提醒
                   </button>
                   <button
                     className={styles.btnDismiss}
